@@ -42,11 +42,11 @@ def get_db_connection():
         else:
             # 2. Local fallback
             return psycopg2.connect(
-                host=os.getenv("DB_HOST", "localhost"),
+                host=os.getenv("DB_HOST", "dpg-d6a7ib49c44c738lv8h0-a"),
                 port=int(os.getenv("DB_PORT", 5432)),
-                dbname=os.getenv("DB_NAME", "sms_db"),
-                user=os.getenv("DB_USER", "postgres"),
-                password=os.getenv("DB_PASSWORD", "Umar123"),
+                dbname=os.getenv("DB_NAME", "society_db_mdw2"),
+                user=os.getenv("DB_USER", "society_db_mdw2_user"),
+                password=os.getenv("DB_PASSWORD", "IpBtGFHsG4BppuonRPercx2TeIUmUFcF"),
                 cursor_factory=RealDictCursor
             )
     except Exception as e:
