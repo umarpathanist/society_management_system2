@@ -1,0 +1,46 @@
+{% extends "layout/base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>💸 Record Society Expense</h1>
+    <!-- Show a label instead of a dropdown -->
+    <p style="color: #64748b;">Recording expense for: <strong>{{ society_name }}</strong></p>
+</div>
+
+<div class="card" style="background: white; border-radius: 16px; padding: 35px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 600px; margin-top: 20px;">
+    <form method="POST" action="{{ url_for('expenses.add_expense') }}">
+        
+        <!-- HIDDEN FIELD: Automatically carries the ID -->
+        <input type="hidden" name="society_id" value="{{ target_soc_id }}">
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Category</label>
+            <select name="category" required style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: white;">
+                <option value="Staff Salary">Staff Salary</option>
+                <option value="Electricity Bill">Electricity Bill</option>
+                <option value="Water Bill">Water Bill</option>
+                <option value="Repairs & Cleaning">Repairs & Cleaning</option>
+                <option value="Miscellaneous">Miscellaneous</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Amount (₹)</label>
+            <input type="number" name="amount" step="0.01" required placeholder="0.00" style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Expense Date</label>
+            <input type="date" name="expense_date" required style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;">
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Description</label>
+            <textarea name="description" placeholder="Additional details..." style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;"></textarea>
+        </div>
+
+        <button type="submit" style="background: #4e46e5; color: white; border: none; padding: 14px 28px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%;">
+            Save Expense
+        </button>
+    </form>
+</div>
+{% endblock %}

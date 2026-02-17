@@ -1,0 +1,204 @@
+{% extends "layout/base.html" %}
+{% block title %}Society Expense Ledger{% endblock %}
+
+{% block content %}
+<style>
+    /* 1. Header & Filter Layout */
+    .ledger-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 40px;
+    }
+
+    .filter-pill {
+        background: #fff;
+        padding: 8px 16px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+
+    /* 2. Card Row Container */
+    .ledger-feed {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* 3. Unique Expense Card */
+    .expense-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px 30px;
+        display: grid;
+        grid-template-columns: 120px 1.5fr 1fr 150px;
+        align-items: center;
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .expense-card:hover {
+        transform: translateX(10px);
+        border-color: #ef4444; /* Red border on hover for expenses */
+        box-shadow: 0 10px 25px rgba(239, 68, 68, 0.08);
+    }
+
+    /* 4. Column Content Styling */
+    .col-date {
+        font-size: 13px;
+        color: #94a3b8;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .col-main {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .category-title {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .expense-badge {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: #fef2f2;
+        color: #991b1b;
+        width: fit-content;
+        margin-top: 5px;
+    }
+
+    .col-desc {
+        font-size: 14px;
+        font-weight: 500;
+        color: #64748b;
+    }
+
+    .col-amount {
+        text-align: right;
+        font-size: 22px;
+        font-weight: 800;
+        color: #ef4444; /* Expenditure Red */
+    }
+
+    /* Header Labels */
+    .ledger-labels {
+        display: grid;
+        grid-template-columns: 120px 1.5fr 1fr 150px;
+        padding: 0 30px 15px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+    }
+
+    .btn-action {
+        background: #111827; /* Dark theme button */
+        color: white;
+        padding: 12px 25px;
+        border-radius: 14px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .btn-action:hover { transform: translateY(-2px); background: #1e293b; }
+</style>
+
+<!-- HEADER SECTION -->
+<div class="ledger-header">
+    <div>
+        <h1 style="margin: 0; font-size: 28px; color: #0f172a;">💸 Society Expenses</h1>
+        <p style="color: #64748b; margin-top: 5px;">Tracking society outflow and operation costs.</p>
+        
+        {% if session.user.role == 'super_admin' %}
+    <div class="filter-pill" style="display: inline-flex; align-items: center; background: #fff; padding: 10px 24px; border-radius: 50px; border: 1px solid #e2e8f0; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-top: 20px; gap: 10px; width: fit-content;">
+        
+        <!-- Label -->
+        <span style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+            Building:
+        </span>
+        
+        <!-- Dropdown -->
+        <select onchange="window.location.href='?society_id=' + this.value" 
+                style="border: none; outline: none; font-weight: 700; color: #4e46e5; background: transparent; cursor: pointer; font-size: 14px; padding-right: 5px;">
+            <option value="">-- All Societies --</option>
+            {% for s in societies %}
+                <option value="{{ s.id }}" {% if s.id == selected_soc %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
+
+    </div>
+{% endif %}
+    </div> 
+
+    <a href="{{ url_for('expenses.add_expense') }}" class="btn-action">+ Record Expense</a>
+</div>
+
+<!-- DATA FEED -->
+<div class="ledger-labels">
+    <div>Date</div>
+    <div>Category</div>
+    <div>Description</div>
+    <div style="text-align: right;">Debit Amount</div>
+</div>
+
+<div class="ledger-feed">
+    {% if records %}
+        {% for r in records %}
+        <div class="expense-card">
+            <!-- 1. Date -->
+            <div class="col-date">
+                {{ r.expense_date }}
+            </div>
+            
+            <!-- 2. Main Info -->
+            <div class="col-main">
+                <div class="category-title">
+                    <span>🧾</span> {{ r.category }}
+                </div>
+                <div class="expense-badge">
+                    Operational
+                </div>
+            </div>
+
+            <!-- 3. Description -->
+            <div class="col-desc">
+                {{ r.description if r.description else '-' }}
+            </div>
+
+            <!-- 4. Amount -->
+            <div class="col-amount">
+                - ₹{{ "{:,.2f}".format(r.amount) }}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <!-- Empty State -->
+        <div style="background: white; border-radius: 24px; padding: 80px; text-align: center; border: 2px dashed #e2e8f0;">
+            <span style="font-size: 50px; display: block; margin-bottom: 20px;">📤</span>
+            <h3 style="color: #64748b;">No Expenses Recorded</h3>
+            <p style="color: #94a3b8;">Select a society or add a new expense to see data here.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

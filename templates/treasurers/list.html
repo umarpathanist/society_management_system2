@@ -1,0 +1,171 @@
+{% extends "layout/base.html" %}
+{% block title %}Treasurer Management{% endblock %}
+
+{% block content %}
+<style>
+    /* Unique Treasurer List Styling */
+    .treasurer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+    }
+
+    .treasurer-card-row {
+        background: white;
+        border-radius: 20px;
+        padding: 22px 30px;
+        margin-bottom: 15px;
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 1fr;
+        align-items: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .treasurer-card-row:hover {
+        transform: scale(1.005) translateX(10px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.06);
+        border-color: #4e46e5;
+    }
+
+    .profile-area {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .profile-avatar {
+        background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+        color: white;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 15px;
+        font-size: 20px;
+        box-shadow: 0 4px 10px rgba(217, 119, 6, 0.25);
+    }
+
+    .name-text {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+
+    .email-text {
+        font-size: 13px;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+
+    /* Society Badge */
+    .society-pill {
+        background: #eef2ff;
+        border: 1px solid #e0e7ff;
+        padding: 8px 18px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #4f46e5;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    /* Action Buttons */
+    .action-group {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+    }
+
+    .btn-trs-action {
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-trs-edit { background: #f1f5f9; color: #475569; }
+    .btn-trs-edit:hover { background: #e2e8f0; color: #1e293b; }
+
+    .btn-trs-delete { background: #fff1f2; color: #e11d48; }
+    .btn-trs-delete:hover { background: #e11d48; color: white; }
+
+    .grid-legend {
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 1fr;
+        padding: 0 30px 15px 30px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+    }
+</style>
+
+<div class="treasurer-header">
+    <div>
+        <h1 style="margin: 0; font-size: 26px; color: #1e293b;">💰 Treasurer Command</h1>
+        <p style="color: #64748b; margin-top: 5px;">Manage global financial officers across all societies.</p>
+    </div>
+    
+    {% if session.user.role == 'super_admin' %}
+    <a href="{{ url_for('treasurers.add') }}" 
+       style="background: #4e46e5; color: white; padding: 14px 28px; border-radius: 16px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);">
+       + Add Treasurer
+    </a>
+    {% endif %}
+</div>
+
+<!-- Header for visual alignment -->
+<div class="grid-legend">
+    <div>Account Identity</div>
+    <div>Assigned Jurisdiction</div>
+    <div style="text-align: right;">Operations</div>
+</div>
+
+{% for t in treasurers %}
+<div class="treasurer-card-row">
+    <!-- 1. Profile Info -->
+    <div class="profile-area">
+        <div class="profile-avatar">👤</div>
+        <div>
+            <div class="name-text">{{ t.full_name }}</div>
+            <div class="email-text">{{ t.email }}</div>
+        </div>
+    </div>
+
+    <!-- 2. Society Assignment -->
+    <div>
+        <div class="society-pill">
+            <span>🏙️</span> {{ t.society_name or "Global Access" }}
+        </div>
+    </div>
+
+    <!-- 3. Actions -->
+    <div class="action-group">
+        <a href="{{ url_for('treasurers.edit', id=t.id) }}" class="btn-trs-action btn-trs-edit">Edit Profile</a>
+        
+        <form action="{{ url_for('treasurers.delete', id=t.id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Remove this treasurer from the system?')">
+            <button type="submit" class="btn-trs-action btn-trs-delete">Remove</button>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="card" style="background: white; border-radius: 24px; padding: 80px 20px; text-align: center; border: 2px dashed #e2e8f0;">
+    <span style="font-size: 50px; display: block; margin-bottom: 20px;">👤</span>
+    <h3 style="color: #64748b;">No Treasurers Registered</h3>
+    <p style="color: #94a3b8;">Start by assigning a financial head to one of your societies.</p>
+</div>
+{% endfor %}
+
+{% endblock %}

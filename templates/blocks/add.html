@@ -1,0 +1,35 @@
+{% extends "layout/base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>🏗️ Add New Block</h1>
+</div>
+
+<div class="card" style="background: white; border-radius: 16px; padding: 35px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 500px; margin-top: 20px;">
+    <form method="POST">
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">Block Name</label>
+            <input type="text" name="name" required placeholder="e.g. Block F"
+                   style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; outline: none;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">Number of Floors</label>
+            <input type="number" name="floors" required placeholder="e.g. 5"
+                   style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; outline: none;">
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">Flats per Floor</label>
+            <input type="number" name="flats_per_floor" required placeholder="e.g. 4"
+                   style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; outline: none;">
+        </div>
+
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <button type="submit" style="background: #4e46e5; color: white; border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: 700; flex: 1;">
+                Save Block
+            </button>
+            <a href="{{ url_for('blocks.list_blocks', society_id=society_id) }}" style="color: #64748b; text-decoration: none; font-size: 14px;">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

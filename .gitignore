@@ -1,0 +1,44 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual env
+venv/
+/.env
+.venv/
+
+# Environment
+.env
+
+# Config secrets
+config.py
+
+# Database
+*.db
+*.sqlite3
+*.sql
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project private files
+email.password.png
+ER-Diagram for SMS.jpeg
+SMS2.jpeg
+SMS2.sql
+sms2.txt
+Society_Management_System_BRD.pdf
+
+# Migrations cache
+database/migrations/
+database/connection.py/

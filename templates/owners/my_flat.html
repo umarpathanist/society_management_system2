@@ -1,0 +1,54 @@
+{% extends "layout/base.html" %}
+{% block title %}My Account Summary{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🏠 My Account Summary</h1>
+    <p style="color: #6b7280;">Logged in as: <strong>{{ session.user.full_name }}</strong></p>
+</div>
+
+<div style="max-width: 700px; margin-top: 30px;">
+    <!-- Consolidated Summary Card -->
+    <div class="card" style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border-top: 6px solid #4e46e5;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f3f4f6; padding-bottom: 20px; margin-bottom: 20px;">
+            <h2 style="margin: 0; color: #111827;">Property Overview</h2>
+            <span style="background: #eef2ff; color: #4e46e5; padding: 6px 16px; border-radius: 30px; font-weight: 700; font-size: 14px;">
+                {{ summary.total_properties }} Properties
+            </span>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 5px;">Assigned Flats:</p>
+            <p style="font-size: 18px; font-weight: 600; color: #374151;">{{ summary.flats_display }}</p>
+        </div>
+
+        <div style="background: #f9fafb; padding: 25px; border-radius: 12px; text-align: center;">
+            <h3 style="color: #6b7280; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Total Outstanding Dues</h3>
+            
+            {% if summary.has_dues %}
+                <p style="font-size: 42px; font-weight: 800; color: #dc2626; margin: 0;">₹{{ "{:,.2f}".format(summary.total_balance) }}</p>
+                <p style="color: #ef4444; font-size: 13px; margin-top: 10px; font-weight: 500;">⚠️ Please clear your dues to avoid penalties.</p>
+            {% else %}
+                <p style="font-size: 42px; font-weight: 800; color: #059669; margin: 0;">₹0.00</p>
+                <p style="color: #059669; font-size: 13px; margin-top: 10px; font-weight: 500;">✅ All maintenance bills are paid.</p>
+            {% endif %}
+        </div>
+
+        <!-- <div style="margin-top: 35px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <a href="{{ url_for('owners.my_maintenance') }}" 
+               style="text-align: center; background: #4e46e5; color: white; padding: 14px; border-radius: 10px; text-decoration: none; font-weight: 700; transition: 0.2s; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+                View Full Statement
+            </a>
+            
+            <a href="#" 
+               style="text-align: center; background: white; color: #4e46e5; padding: 14px; border-radius: 10px; text-decoration: none; font-weight: 700; border: 2px solid #4e46e5;">
+                Download PDF Receipt
+            </a>
+        </div> -->
+
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,4 @@
+id,flat_id,amount,month,year,due_date,status
+1,1,2500.00,February,2026,2026-02-15,paid
+2,3,3000.00,February,2026,2026-02-15,unpaid
+3,4,1500.00,January,2026,2026-01-15,overdue

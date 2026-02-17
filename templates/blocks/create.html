@@ -1,0 +1,21 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="card">
+
+    <h2>Add Block</h2>
+
+    <form method="POST">
+
+        <label>Block Name</label><br>
+        <input type="text" name="name" required><br><br>
+
+        <label>Total Flats</label><br>
+        <input type="number" name="total_flats" min="0"><br><br>
+
+        <button type="submit">Save Block</button>
+
+    </form>
+
+</div>
+{% endblock %}

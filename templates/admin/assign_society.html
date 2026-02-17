@@ -1,0 +1,246 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Assign Society{% endblock %}
+
+{% block content %}
+
+<style>
+/* ===============================
+   ASSIGN SOCIETY UI
+================================ */
+.page-header {
+    margin-bottom: 24px;
+}
+
+.page-header h1 {
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.page-header p {
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.assign-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+    padding: 28px;
+    max-width: 640px;
+}
+
+/* admin Info */
+.admin-info {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.admin-info strong {
+    font-size: 15px;
+}
+
+.admin-info span {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* Form */
+.form-group {
+    margin-bottom: 18px;
+}
+
+label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+}
+
+/* Permission Toggles */
+.permission-box {
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 12px;
+}
+
+.permission {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.permission:last-child {
+    margin-bottom: 0;
+}
+
+.permission span {
+    font-size: 14px;
+    color: #374151;
+}
+
+/* Toggle */
+.toggle {
+    position: relative;
+    width: 46px;
+    height: 24px;
+}
+
+.toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #e5e7eb;
+    border-radius: 999px;
+    transition: 0.3s;
+}
+
+.slider:before {
+    content: "";
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+.toggle input:checked + .slider {
+    background: #4f46e5;
+}
+
+.toggle input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+/* Actions */
+.form-actions {
+    margin-top: 28px;
+    display: flex;
+    gap: 12px;
+}
+
+.btn-primary {
+    background: #4f46e5;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: #4338ca;
+}
+
+.btn-cancel {
+    padding: 12px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #4f46e5;
+    font-weight: 500;
+}
+
+.btn-cancel:hover {
+    background: #eef2ff;
+}
+</style>
+
+<!-- ===============================
+     HEADER
+================================ -->
+<div class="page-header">
+    <h1>Assign Society</h1>
+    <p>Grant society access and permissions to an admin</p>
+</div>
+
+<!-- ===============================
+     CARD
+================================ -->
+<div class="assign-card">
+
+    <!-- admin Info -->
+    <div class="admin-info">
+        <strong>admin:</strong>
+        {{ admin.name }} <br>
+        <span>{{ admin.email }}</span>
+    </div>
+
+    <form method="POST">
+
+        <!-- Society -->
+        <div class="form-group">
+            <label>Select Society</label>
+            <select name="society_id" required>
+                <option value="">— Select Society —</option>
+                {% for s in societies %}
+                    <option value="{{ s.id }}">{{ s.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Permissions
+        <div class="permission-box">
+            <div class="permission">
+                <span>Manage Blocks</span>
+                <label class="toggle">
+                    <input type="checkbox" name="can_manage_blocks">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="permission">
+                <span>Manage Flats</span>
+                <label class="toggle">
+                    <input type="checkbox" name="can_manage_flats">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="permission">
+                <span>Toggle Occupancy Status</span>
+                <label class="toggle">
+                    <input type="checkbox" name="can_toggle_occupancy">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div> -->
+
+        <!-- Actions -->
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">
+                Assign Society
+            </button>
+
+            <a href="{{ url_for('admin.list_admins') }}"
+               class="btn-cancel">
+                Cancel
+            </a>
+        </div>
+
+    </form>
+</div>
+
+{% endblock %}

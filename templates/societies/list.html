@@ -1,0 +1,226 @@
+{% extends "layout/base.html" %}
+{% block title %}Manage Societies{% endblock %}
+
+{% block content %}
+<style>
+    /* Unique Society List Styling */
+    .society-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+    }
+
+    .society-card-row {
+        background: white;
+        border-radius: 20px;
+        padding: 20px 25px;
+        margin-bottom: 15px;
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 1fr 1fr 2fr;
+        align-items: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+    }
+
+    .society-card-row:hover {
+        transform: scale(1.01) translateX(5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        border-color: #e2e8f0;
+    }
+
+    .society-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .building-icon {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 20px;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+    }
+
+    .society-title {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+
+    .society-subtitle {
+        font-size: 12px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .treasurer-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f8fafc;
+        padding: 8px 12px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        font-size: 13px;
+        color: #475569;
+        font-weight: 500;
+    }
+
+    .unassigned {
+        border: 1.5px dashed #cbd5e1;
+        background: transparent;
+        color: #94a3b8;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .unassigned:hover {
+        border-color: #4e46e5;
+        color: #4e46e5;
+    }
+
+    .count-badge {
+        text-align: center;
+    }
+    .count-value {
+        display: block;
+        font-size: 18px;
+        font-weight: 800;
+        color: #1e293b;
+    }
+    .count-label {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+
+    /* Modern Buttons */
+    .action-group {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .btn-action {
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-view { background: #eef2ff; color: #4338ca; }
+    .btn-view:hover { background: #4338ca; color: white; }
+
+    .btn-edit { background: #ecfdf5; color: #059669; }
+    .btn-edit:hover { background: #059669; color: white; }
+
+    .btn-delete { background: #fff1f2; color: #e11d48; }
+    .btn-delete:hover { background: #e11d48; color: white; }
+
+    .table-head-labels {
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 1fr 1fr 2fr;
+        padding: 0 25px 15px 25px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+</style>
+
+<div class="society-header">
+    <div>
+        <h1 style="margin: 0; font-size: 26px; color: #1e293b;">🏢 Societies</h1>
+        <p style="color: #64748b; margin-top: 5px;">A bird's-eye view of all registered communities</p>
+    </div>
+    {% if session.user.role == 'super_admin' %}
+    <a href="{{ url_for('societies.add_society') }}" class="btn-login" style="padding: 12px 25px; text-decoration: none; border-radius: 14px; box-shadow: 0 4px 12px rgba(78, 70, 229, 0.25);">
+        + Add New Society
+    </a>
+    {% endif %}
+</div>
+
+<!-- Custom Table Head -->
+<div class="table-head-labels">
+    <div>Society Identity</div>
+    <div>Financial Officer</div>
+    <div style="text-align: center;">Blocks</div>
+    <div style="text-align: center;">Flats</div>
+    <div style="text-align: right;">Management</div>
+</div>
+
+{% for society in societies %}
+<div class="society-card-row">
+    <!-- 1. Identity -->
+    <div class="society-info">
+        <div class="building-icon">🏙️</div>
+        <div>
+            <div class="society-title">{{ society.name }}</div>
+            <!-- <div class="society-subtitle">ID: #{{ society.id }}</div> -->
+        </div>
+    </div>
+
+    <!-- 2. Treasurer -->
+    <div>
+        {% if society.treasurer_name %}
+            <div class="treasurer-pill">
+                <span>👤</span> {{ society.treasurer_name }}
+            </div>
+        {% else %}
+            {% if session.user.role in ['admin', 'super_admin'] %}
+                <a href="{{ url_for('treasurers.add') }}" class="treasurer-pill unassigned">
+                    <span>➕</span> Assign Treasurer
+                </a>
+            {% else %}
+                <span class="society-subtitle">No Head</span>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- 3. Blocks Count -->
+    <div class="count-badge">
+        <span class="count-value" style="color: #6366f1;">{{ society.blocks or 0 }}</span>
+        <span class="count-label">Blocks</span>
+    </div>
+
+    <!-- 4. Flats Count -->
+    <div class="count-badge">
+        <span class="count-value" style="color: #10b981;">{{ society.flats or 0 }}</span>
+        <span class="count-label">Units</span>
+    </div>
+
+    <!-- 5. Actions -->
+    <div class="action-group">
+        <a href="{{ url_for('blocks.list_blocks', society_id=society.id) }}" class="btn-action btn-view">View Structure</a>
+        
+        {% if session.user.role == 'super_admin' %}
+        <a href="{{ url_for('societies.edit_society', id=society.id) }}" class="btn-action btn-edit">Edit</a>
+        
+        <form action="{{ url_for('societies.delete_society', id=society.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this society and all its units?')">
+            <button type="submit" class="btn-action btn-delete">Delete</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="card" style="background: white; border-radius: 24px; padding: 60px; text-align: center; border: 2px dashed #e2e8f0;">
+    <p style="color: #94a3b8; font-size: 16px;">No societies registered yet.</p>
+</div>
+{% endfor %}
+
+{% endblock %}

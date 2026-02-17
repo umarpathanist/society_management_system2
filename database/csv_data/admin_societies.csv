@@ -1,0 +1,3 @@
+id,admin_id,society_id,can_manage_blocks,can_manage_flats
+1,2,1,true,true
+2,3,2,true,true

@@ -1,0 +1,112 @@
+{% extends "layout/base.html" %}
+{% block title %}Maintenance Command Center{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 35px; display: flex; justify-content: space-between; align-items: flex-start;">
+    <div>
+        <h1 style="margin: 0; font-size: 26px; color: #1e293b;">🏗️ Maintenance Command Center</h1>
+        <p style="color: #64748b; margin-top: 5px;">Manage billing cycles and resident notifications.</p>
+    </div>
+    <a href="{{ url_for('treasurers.collect_maintenance') }}" 
+       style="background-color: #10b981; color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); display: flex; align-items: center; gap: 8px;">
+        <span>💰</span> Collect Maintenance
+    </a>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
+    
+    <!-- LEFT COLUMN: MANUAL GENERATION FORM -->
+    <div class="card" style="background: white; border-radius: 20px; padding: 35px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;">
+        <h3 style="margin-top: 0; margin-bottom: 25px; font-size: 18px; color: #1e293b; display: flex; align-items: center; gap: 10px;">
+            <span style="background: #eef2ff; padding: 8px; border-radius: 10px;">🧾</span> 
+            Manual Billing Cycle
+        </h3>
+
+        <form method="POST">
+            <input type="hidden" name="action" value="generate">
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 700; font-size: 13px; color: #475569;">Maintenance Amount (₹)</label>
+                <input type="number" name="amount" required placeholder="e.g. 2500" 
+                       style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 15px; outline: none; box-sizing: border-box;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 700; font-size: 13px; color: #475569;">Billing Month</label>
+                    <select name="month" required style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; background: white; outline: none;">
+                        {% for m in ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] %}
+                            <option value="{{ m }}">{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 700; font-size: 13px; color: #475569;">Year</label>
+                    <input type="number" name="year" value="202" required style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 700; font-size: 13px; color: #475569;">Payment Due Date</label>
+                <input type="date" name="due_date" required style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px;">
+            </div>
+
+            <button type="submit" style="width: 100%; background: #4e46e5; color: white; border: none; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);">
+                🚀 Generate & Notify Residents
+            </button>
+
+            <!-- Add this below the 🚀 Generate button -->
+<p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 15px;">
+    ℹ️ System logic: Maintenance is only generated for <strong>Occupied</strong> flats. 
+    Vacant units are automatically skipped.
+</p>
+        </form>
+    </div>
+
+    <!-- RIGHT COLUMN: SYSTEM STATUS & QUICK REMINDERS -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        
+        <!-- Auto-System Status -->
+        <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                <span style="font-size: 24px;">🤖</span>
+                <h4 style="margin: 0; font-size: 16px;">Automation Active</h4>
+            </div>
+            <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin: 0;">
+                Our system automatically generates bills and sends email notifications on the <strong>1st of every month</strong>. 
+            </p>
+            <div style="margin-top: 15px; font-size: 12px; color: #10b981; font-weight: 700;">
+                ● System Clock: Operational
+            </div>
+        </div>
+
+        <!-- Inside the Quick Reminders Card -->
+<!-- ... Top of page ... -->
+
+<div class="card" style="background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;">
+    <h3 style="margin-top: 0; font-size: 16px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+        <span>🔔</span> Instant Reminders
+    </h3>
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+        Nudge all owners who haven't paid for their generated bills.
+    </p>
+    
+    <!-- FIX: Ensure there is a FORM with a hidden ACTION input -->
+    <form method="POST">
+        <input type="hidden" name="action" value="remind">
+        
+        <button type="submit" style="width: 100%; background: #4e46e5; color: white; border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);">
+            Send "Unpaid" Alerts
+        </button>
+    </form>
+    
+    <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 12px;">
+        *Automated emails will target <u>Unpaid</u> status only.
+    </p>
+</div>
+
+<!-- ... Rest of page ... -->
+    </div>
+
+</div>
+{% endblock %}

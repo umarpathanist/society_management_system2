@@ -1,0 +1,139 @@
+{% extends "layout/base.html" %}
+{% block title %}Reports Hub{% endblock %}
+
+{% block content %}
+<style>
+    .report-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 30px; margin-top: 20px; }
+    .report-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; height: 100%; box-sizing: border-box;}
+    .report-title { font-size: 15px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .ledger-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f8fafc; font-size: 13px; }
+    .badge-in { color: #059669; font-weight: 800; background: #ecfdf5; padding: 3px 8px; border-radius: 6px; font-size: 10px; }
+    .badge-out { color: #dc2626; font-weight: 800; background: #fff1f2; padding: 3px 8px; border-radius: 6px; font-size: 10px; }
+    .progress-track { height: 12px; background: #f1f5f9; border-radius: 10px; overflow: hidden; display: flex; margin: 20px 0; }
+</style>
+
+<div class="page-header" style="margin-bottom: 30px;">
+    <h1 style="font-size: 26px; color: #1e293b;">🏢 Financial Reports Hub</h1>
+    <p style="color: #64748b;">Official society accounting and audit summary.</p>
+</div>
+
+<div class="report-grid">
+    <!-- 1. BALANCE SHEET -->
+    <div class="report-card">
+        <div class="report-title"><span>📊</span> Revenue vs Expenses</div>
+        {% set total_in = finance.total_maint + finance.total_misc %}
+        {% set exp_percent = (finance.total_exp / total_in * 100) if total_in > 0 else 0 %}
+        
+        <div class="ledger-row"><span>Total Revenue</span> <strong style="color: #10b981;">₹{{ "{:,.0f}".format(total_in) }}</strong></div>
+        <div class="ledger-row"><span>Total Expenses</span> <strong style="color: #f43f5e;">₹{{ "{:,.0f}".format(finance.total_exp) }}</strong></div>
+        
+        <div class="progress-track">
+            <div style="width: {{ 100-exp_percent }}%; background: #10b981;"></div>
+            <div style="width: {{ exp_percent }}%; background: #f43f5e;"></div>
+        </div>
+        
+        <div class="ledger-row" style="border-top: 2px solid #f1f5f9; margin-top: 10px; padding-top: 15px;">
+            <span style="font-weight: 700;">Net Balance</span> 
+            <strong style="color: #4e46e5; font-size: 20px;">₹{{ "{:,.0f}".format(total_in - finance.total_exp) }}</strong>
+        </div>
+    </div>
+
+    <!-- 2. AUDIT COMPLIANCE -->
+    <div class="report-card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white;">
+        <div class="report-title" style="color: white;"><span>📜</span> Audit Compliance</div>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">Generate statutory forms required for registration and AGM meetings.</p>
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <button style="background: rgba(255,255,255,0.1); color: white; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); padding: 12px 15px; font-size: 12px; cursor: pointer; flex: 1;">Download Form 1</button>
+            <button style="background: rgba(255,255,255,0.1); color: white; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); padding: 12px 15px; font-size: 12px; cursor: pointer; flex: 1;">Download Form 28</button>
+        </div>
+    </div>
+
+    <!-- 3. MEMBER ARREARS -->
+
+    <div class="report-card" style="grid-column: span 2;">
+        <div class="report-title"><span>⚠️</span> Outstanding Dues (Arrears)</div>
+        <!-- <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead style="background: #f8fafc;">
+                <tr style="text-align: left; color: #94a3b8; text-transform: uppercase; font-size: 10px; letter-spacing: 1px;">
+                    <th style="padding: 15px;">Resident</th>
+                    <th style="padding: 15px;">Flat</th>
+                    <th style="padding: 15px;">Period</th>
+                    <th style="padding: 15px; text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in dues %}
+                <tr style="border-bottom: 1px solid #f8fafc;">
+                    <td style="padding: 15px; font-weight: 600;">{{ d.full_name }}</td>
+                    <td style="padding: 15px; color: #4e46e5; font-weight: 700;">{{ d.flat_number }}</td>
+                    <td style="padding: 15px; color: #64748b;">{{ d.month }} {{ d.year }}</td>
+                    <td style="padding: 15px; text-align: right; color: #e11d48; font-weight: 800;">₹{{ d.amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table> -->
+        <!-- Inside templates/reports/index.html -> Outstanding Dues Table -->
+<table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+    <thead style="background: #f8fafc;">
+        <tr style="text-align: left; color: #94a3b8; text-transform: uppercase; font-size: 10px; letter-spacing: 1px;">
+            <th style="padding: 15px;">Resident</th>
+            <th style="padding: 15px;">Flat</th>
+            <th style="padding: 15px;">Period</th>
+            <th style="padding: 15px; text-align: right;">Amount</th>
+            <th style="padding: 15px; text-align: right;">Action</th> <!-- New Header -->
+        </tr>
+    </thead>
+    <tbody>
+        {% if dues %}
+            {% for d in dues %}
+            <tr style="border-bottom: 1px solid #f8fafc;">
+                <td style="padding: 15px; font-weight: 600; color: #1e293b;">{{ d.full_name }}</td>
+                <td style="padding: 15px; color: #4e46e5; font-weight: 800;">{{ d.flat_number }}</td>
+                <td style="padding: 15px; color: #64748b; font-size: 13px;">{{ d.month }} {{ d.year }}</td>
+                <td style="padding: 15px; text-align: right; color: #e11d48; font-weight: 800;">₹{{ d.amount }}</td>
+                
+
+<!-- Inside the <tbody> of your Pending Maintenance table -->
+<td style="padding: 15px; text-align: right;">
+    <a href="{{ url_for('owners.checkout', maintenance_id=d.id) }}" 
+       style="background: #4e46e5; color: white; padding: 8px 20px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 700; display: inline-block; transition: 0.2s;"
+       onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+        Pay
+    </a>
+</td>            </tr>
+            {% endfor %}
+        {% else %}
+            <tr><td colspan="5" style="text-align: center; padding: 50px; color: #94a3b8;">🎉 All clear!</td></tr>
+        {% endif %}
+    </tbody>
+</table>
+
+    </div>
+
+    <!-- 4. GENERAL LEDGER / DAY BOOK -->
+    <div class="report-card" style="grid-column: span 2;">
+        <div class="report-title"><span>📖</span> General Ledger & Day Book</div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tbody>
+                {% for entry in ledger %}
+                <tr style="border-bottom: 1px solid #f8fafc;">
+                    <td style="padding: 15px; color: #94a3b8; font-size: 13px; width: 120px;">{{ entry.entry_date }}</td>
+                    <td style="padding: 15px; width: 60px;">
+                        <span class="{% if entry.type == 'IN' %}badge-in{% else %}badge-out{% endif %}">
+                            {{ entry.type }}
+                        </span>
+                    </td>
+                    <td style="padding: 15px; font-weight: 600; color: #334155;">{{ entry.source }}</td>
+                    <td style="padding: 15px; color: #64748b; font-size: 13px;">{{ entry.description or '-' }}</td>
+                    <td style="padding: 15px; text-align: right; font-weight: 800; color: {% if entry.type == 'IN' %}#10b981{% else %}#ef4444{% endif %};">
+                        {% if entry.type == 'IN' %}+{% else %}-{% endif %} ₹{{ "{:,.2f}".format(entry.amount) }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;">No transactions found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

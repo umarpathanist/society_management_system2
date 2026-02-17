@@ -1,0 +1,38 @@
+{% extends "layout/base.html" %}
+{% block title %}My Flat{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>👤 My Flat</h1>
+    <p>Details of your assigned flat</p>
+</div>
+
+<div class="card">
+    {% if flat %}
+        <h2>My Flat</h2>
+
+{% if flat %}
+    <p><strong>Flat:</strong> {{ flat.flat_number }}</p>
+    <p><strong>Block:</strong> {{ flat.block_name }}</p>
+
+    <h3>Maintenance</h3>
+    {% if maintenance %}
+        <ul>
+            {% for m in maintenance %}
+                <li>{{ m.month }} - ₹{{ m.amount }} ({{ m.status }})</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No maintenance records</p>
+    {% endif %}
+{% else %}
+    <p>No flat assigned yet.</p>
+{% endif %}
+
+    {% else %}
+        <p>No flat assigned to you.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

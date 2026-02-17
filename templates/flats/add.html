@@ -1,0 +1,21 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Add Flat{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>➕ Add Flat</h2>
+</div>
+
+<form method="POST">
+    <div class="form-group">
+        <label>Flat Number</label>
+        <input type="text" name="flat_number" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Flat</button>
+    <a href="{{ url_for('flats.list_flats', block_id=block_id) }}" class="btn btn-secondary">
+        Cancel
+    </a>
+</form>
+{% endblock %}

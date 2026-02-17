@@ -1,0 +1,19 @@
+{% extends "layout/base.html" %}
+{% block title %}Assign owner{% endblock %}
+
+{% block content %}
+<h2>Assign owner – {{ flat.flat_number }}</h2>
+
+<form method="POST">
+    <label>Select owner</label>
+    <select name="owner_id" required>
+        <option value="">-- Select owner --</option>
+        {% for owner in owners %}
+            <option value="{{ owner.id }}">{{ owner.full_name }}</option>
+        {% endfor %}
+    </select>
+
+    <br><br>
+    <button type="submit" class="btn-primary">Assign</button>
+</form>
+{% endblock %}

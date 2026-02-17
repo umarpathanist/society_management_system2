@@ -1,0 +1,99 @@
+{% extends "layout/base.html" %}
+{% block title %}My Maintenance{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>💰 My Maintenance Bills</h1>
+    <p style="color: #6b7280;">Viewing all bills for your assigned properties.</p>
+</div>
+
+<div class="card" style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 20px;">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 2px solid #f3f4f6; color: #6b7280; font-size: 13px; text-transform: uppercase;">
+                <th style="padding: 15px;">Flat</th>
+                <th style="padding: 15px;">Period</th>
+                <th style="padding: 15px;">Amount</th>
+                <th style="padding: 15px;">Due Date</th>
+                <th style="padding: 15px;">Status</th>
+                <th style="padding: 15px;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if maintenance %}
+                {% for bill in maintenance %}
+                <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <!-- 1. Flat Number -->
+                    <td style="padding: 15px;">
+                        <strong style="color: #4e46e5;">{{ bill.flat_display }}</strong>
+                    </td>
+                    
+                    <!-- 2. Month/Year -->
+                    <td style="padding: 15px; font-weight: 500;">
+                        {{ bill.month }} {{ bill.year }}
+                    </td>
+                    
+                    <!-- 3. Amount -->
+                    <td style="padding: 15px; font-weight: 600;">
+                        ₹{{ "{:,.2f}".format(bill.amount) }}
+                    </td>
+                    
+                    <!-- 4. Due Date -->
+                    <td style="padding: 15px; color: #6b7280;">
+                        {{ bill.due_date }}
+                    </td>
+                    
+                    <!-- 5. Status Badge -->
+                    <td style="padding: 15px;">
+                        {% if bill.status == 'paid' %}
+                            <span style="background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">Paid</span>
+                        {% else %}
+                            <span style="background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">Unpaid</span>
+                        {% endif %}
+                    </td>
+                    
+                    <!-- 6. Functional Action Button -->
+                    <!-- <td style="padding: 15px;">
+                        {% if bill.status == 'unpaid' %}
+                            <form action="{{ url_for('owners.pay_bill', maintenance_id=bill.id) }}" method="POST" style="margin: 0;">
+                                <button type="submit" style="background: #4e46e5; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700; transition: 0.2s;"
+                                        onclick="return confirm('Do you want to proceed with the payment of ₹{{ bill.amount }}?')">
+                                    Pay Now
+                                </button>
+                            </form>
+                        {% else %}
+                            <div style="display: flex; align-items: center; gap: 5px; color: #059669; font-weight: 600; font-size: 12px;">
+                                <span>✅ Completed</span>
+                            </div>
+                        {% endif %}
+                    </td> -->
+
+                    <!-- Inside Column 6: Action Button -->
+<td style="padding: 15px;">
+    {% if bill.status == 'unpaid' %}
+        <!-- Link to the checkout page -->
+        <a href="{{ url_for('owners.checkout', maintenance_id=bill.id) }}" 
+           style="background: #4e46e5; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 12px; font-weight: 700; transition: 0.2s;"
+           onclick="return confirm('Proceed to secure payment for ₹{{ bill.amount }}?')">
+            Pay Now
+        </a>
+    {% else %}
+        <div style="display: flex; align-items: center; gap: 5px; color: #059669; font-weight: 600; font-size: 12px;">
+            <span>✅ Completed</span>
+        </div>
+    {% endif %}
+</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">
+                        No maintenance bills found for your assigned flats.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

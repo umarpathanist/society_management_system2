@@ -1,0 +1,182 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Add Society{% endblock %}
+
+{% block content %}
+
+<style>
+/* ===============================
+   ADD SOCIETY PAGE STYLES
+================================ */
+.page-header {
+    margin-bottom: 24px;
+}
+
+.page-header h1 {
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.page-header p {
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.form-card {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    padding: 28px;
+    max-width: 720px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full {
+    grid-column: span 2;
+}
+
+label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+input,
+textarea {
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+    outline: none;
+}
+
+input:focus,
+textarea:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
+
+textarea {
+    resize: none;
+    min-height: 80px;
+}
+
+.form-actions {
+    margin-top: 26px;
+    display: flex;
+    gap: 12px;
+}
+
+.btn-primary {
+    background: #4f46e5;
+    color: #ffffff;
+    padding: 12px 22px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: #4338ca;
+}
+
+.btn-cancel {
+    color: #4f46e5;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+}
+
+.btn-cancel:hover {
+    background: #eef2ff;
+}
+</style>
+
+<!-- ===============================
+     PAGE HEADER
+================================ -->
+<div class="page-header">
+    <h1>🏢 Add Society</h1>
+    <p>Create a new housing society</p>
+</div>
+
+<!-- ===============================
+     FORM CARD
+================================ -->
+<div class="form-card">
+    <form method="POST" action="{{ url_for('societies.add_society') }}">
+
+        <div class="form-grid">
+
+            <div class="form-group full">
+                <label>Society Name</label>
+                <input type="text"
+                       name="name"
+                       placeholder="Enter society name"
+                       required>
+            </div>
+
+            <div class="form-group full">
+                <label>Address</label>
+                <textarea name="address"
+                          placeholder="Enter address"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Total Blocks</label>
+                <input type="number"
+                       name="total_blocks"
+                       min="1"
+                       placeholder="e.g. 5"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label>Floors per Block</label>
+                <input type="number"
+                       name="floors_per_block"
+                       min="1"
+                       placeholder="e.g. 10"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label>Flats per Floor</label>
+                <input type="number"
+                       name="flats_per_floor"
+                       min="1"
+                       placeholder="e.g. 4"
+                       required>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">
+                💾 Save Society
+            </button>
+
+            <a href="{{ url_for('societies.list_societies') }}"
+               class="btn-cancel">
+                Cancel
+            </a>
+        </div>
+
+    </form>
+</div>
+
+{% endblock %}

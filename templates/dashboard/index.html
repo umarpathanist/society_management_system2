@@ -1,0 +1,89 @@
+{% extends "layout/base.html" %}
+{% block title %}Society Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .stat-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+    .stat-card {
+        position: relative;
+        overflow: hidden;
+        padding: 30px;
+        border-radius: 24px;
+        color: white;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    }
+    .stat-card:hover { transform: translateY(-8px); box-shadow: 0 20px 30px rgba(0, 0, 0, 0.12); }
+    
+    .bg-societies { background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); }
+    .bg-admins { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); }
+    .bg-residents { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+    
+    .bg-income { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .bg-expense { background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); }
+    .bg-balance { background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); }
+
+    .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; opacity: 0.9; margin-bottom: 8px; display: block; }
+    .stat-value { font-size: 32px; font-weight: 800; margin: 0; position: relative; z-index: 2; }
+    .watermark { position: absolute; right: -10px; bottom: -15px; font-size: 80px; opacity: 0.15; transform: rotate(-15deg); pointer-events: none; }
+    .stat-badge { margin-top: 15px; font-size: 11px; background: rgba(255, 255, 255, 0.2); padding: 4px 10px; border-radius: 50px; display: inline-block; font-weight: 600; }
+    .section-title { font-size: 15px; font-weight: 700; color: #64748b; margin: 40px 0 20px 0; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+</style>
+
+<div class="page-header" style="margin-bottom: 20px;">
+    <h1 style="font-size: 24px; color: #1e293b; margin: 0;">🏠 Society Intelligence</h1>
+    <p style="color: #64748b; margin-top: 5px;">Welcome back, <strong>{{ session.user.full_name }}</strong>.</p>
+</div>
+
+<!-- 1. SYSTEM-WIDE TOTALS (Super Admin only) -->
+{% if super_stats %}
+    <div class="section-title"><span>🌐</span> System-Wide Totals</div>
+    <div class="stat-container">
+        <div class="stat-card bg-societies">
+            <span class="stat-label">Total Societies</span>
+            <h2 class="stat-value">{{ super_stats.societies }}</h2>
+            <div class="stat-badge">🏢 Registered Entities</div>
+            <div class="watermark">🏙️</div>
+        </div>
+        <!-- <div class="stat-card bg-admins">
+            <span class="stat-label">System Staff</span>
+            <h2 class="stat-value">{{ super_stats.admins + super_stats.treasurers }}</h2>
+            <div class="stat-badge">👤 Managed Accounts</div>
+            <div class="watermark">🛡️</div>
+        </div> -->
+
+
+        <!-- <div class="stat-card bg-residents">
+            <span class="stat-label">Total Residents</span>
+            <h2 class="stat-value">{{ super_stats.owners + super_stats.tenants }}</h2>
+            <div class="stat-badge">👥 User Base</div>
+            <div class="watermark">🏠</div>
+        </div> -->
+    
+    </div>
+{% endif %}
+
+<!-- 2. OPERATIONAL DASHBOARD (Admins/Treasurers only) -->
+{% if stats %}
+    <div class="section-title"><span>💰</span> Financial Overview</div>
+    <div class="stat-container">
+        <div class="stat-card bg-income"><span class="stat-label">Total Revenue</span><h2 class="stat-value">₹{{ "{:,.2f}".format(stats.total_income) }}</h2><div class="watermark">📥</div></div>
+        <div class="stat-card bg-expense"><span class="stat-label">Total Spending</span><h2 class="stat-value">₹{{ "{:,.2f}".format(stats.total_expenses) }}</h2><div class="watermark">📤</div></div>
+        <div class="stat-card bg-balance"><span class="stat-label">Net Treasury</span><h2 class="stat-value">₹{{ "{:,.2f}".format(stats.net_balance) }}</h2><div class="watermark">🏦</div></div>
+    </div>
+
+    <div class="section-title"><span>👥</span> Resident Insights</div>
+    <div class="stat-container">
+        <div class="stat-card bg-residents"><span class="stat-label">Flat Owners</span><h2 class="stat-value">{{ stats.owner_count }}</h2><div class="watermark">🤝</div></div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);"><span class="stat-label">Active Tenants</span><h2 class="stat-value">{{ stats.tenant_count }}</h2><div class="watermark">🏢</div></div>
+        <div style="visibility: hidden;"></div>
+    </div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,5 @@
+id,block_id,flat_number,floor_number,is_occupied,owner_id,tenant_id
+1,1,A-101,1,TRUE,4,NULL
+2,1,A-102,1,TRUE,4,6
+3,2,B-201,2,TRUE,4,NULL
+4,3,W-101,1,TRUE,5,NULL

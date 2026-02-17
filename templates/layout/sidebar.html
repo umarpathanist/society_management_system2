@@ -1,0 +1,117 @@
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-header">
+        <h2>Society</h2>
+    </div>
+
+    <ul class="sidebar-menu">
+        <!-- ALL USERS -->
+        <li>
+            <a href="{{ url_for('dashboard.index') }}">📊 Dashboard</a>
+        </li>
+
+        <!-- Add this inside your sidebar navigation list -->
+{% if session.user.role == 'super_admin' %}
+<li class="nav-item">
+    <a href="{{ url_for('societies.list_treasurers') }}" class="nav-link">
+        <span class="icon">💰</span>
+        <span class="text">Treasurers</span>
+    </a>
+</li>
+{% endif %}
+
+        <!-- ADMIN & SUPER ADMIN SECTION -->
+        {% if session.user.role in ['admin', 'super_admin'] %}
+            <li class="sidebar-section-title">Management</li>
+            <li>
+                <a href="{{ url_for('owners.list_owners') }}">👥 Owners & Tenants</a>
+            </li>
+
+            {% if sidebar_blocks %}
+                <li class="sidebar-section-title">Societies & Blocks</li>
+                {% for block in sidebar_blocks %}
+                    <li>
+                        <a href="{{ url_for('flats.list_flats', block_id=block.id) }}">
+                            🧱 Block {{ block.name }}
+                        </a>
+                    </li>
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+
+        <!-- OWNER & TENANT SECTION -->
+        {% if session.user.role in ['owner', 'tenant'] %}
+            <li class="sidebar-section-title">My Residence</li>
+            <li>
+                <a href="{{ url_for('owners.my_flat') }}">🏠 My Flat</a>
+            </li>
+            <li>
+                <a href="{{ url_for('owners.my_maintenance') }}">💰 My Maintenance</a>
+            </li>
+        {% endif %}
+
+        <!-- LOGOUT SECTION -->
+        <li class="sidebar-logout">
+            <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
+        </li>
+    </ul>
+</div>
+
+<style>
+    /* Basic styling to make sections look better */
+    .sidebar-section-title {
+        padding: 15px 20px 5px 20px;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #6b7280;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+    .sidebar-menu li a {
+        padding: 10px 20px;
+        display: block;
+        text-decoration: none;
+        color: #374151;
+        transition: background 0.2s;
+    }
+    .sidebar-menu li a:hover {
+        background: #f3f4f6;
+    }
+    .sidebar-logout {
+        margin-top: 20px;
+        border-top: 1px solid #e5e7eb;
+    }
+</style>
+
+
+
+
+
+<ul class="nav-list">
+    <!-- Existing Dashboard Link -->
+    <li class="nav-item">
+        <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
+    </li>
+
+    <!-- Existing Societies Link -->
+    <li class="nav-item">
+        <a href="{{ url_for('societies.list_societies') }}">Societies</a>
+    </li>
+
+    <!-- Existing Admins Link -->
+    <li class="nav-item">
+        <a href="{{ url_for('admin.list_admins') }}">Admins</a>
+    </li>
+
+    <!-- NEW: Treasurers Link (Only for Super Admin) -->
+    {% if session.user.role == 'super_admin' %}
+    <li class="nav-item">
+        <a href="{{ url_for('societies.list_treasurers') }}">Treasurers</a>
+    </li>
+    {% endif %}
+
+    <!-- Existing Logout Link -->
+    <li class="nav-item">
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+    </li>
+</ul>

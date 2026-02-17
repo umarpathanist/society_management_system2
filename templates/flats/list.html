@@ -1,0 +1,217 @@
+{% extends "layout/base.html" %}
+{% block title %}Block Structure - Units{% endblock %}
+
+{% block content %}
+<style>
+    /* Unique Unit Grid Styling */
+    .flats-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 40px;
+    }
+
+    .unit-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .unit-card {
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 220px;
+    }
+
+    .unit-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.06);
+        border-color: #4e46e5;
+    }
+
+    .unit-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .unit-number {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1e293b;
+        letter-spacing: -0.5px;
+    }
+
+    .status-badge {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 8px;
+    }
+
+    .status-vacant { background: #dcfce7; color: #15803d; }
+    .status-occupied { background: #fee2e2; color: #b91c1c; }
+
+    .resident-box {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #64748b;
+        line-height: 1.6;
+    }
+
+    .resident-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
+    }
+
+    .name-tag { font-weight: 600; color: #334155; }
+
+    /* Assignment Form UI */
+    .assign-area {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .assign-select {
+        width: 100%;
+        padding: 8px;
+        border-radius: 10px;
+        border: 1.5px solid #e2e8f0;
+        font-size: 12px;
+        margin-bottom: 8px;
+        background: #f8fafc;
+        outline: none;
+    }
+
+    .btn-assign {
+        width: 100%;
+        background: #4e46e5;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-assign:hover { background: #4338ca; }
+
+    .btn-remove {
+        background: none;
+        border: none;
+        color: #ef4444;
+        font-size: 10px;
+        font-weight: 700;
+        text-decoration: underline;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    /* Top Controls */
+    .block-switcher {
+        padding: 10px 20px;
+        border-radius: 14px;
+        border: 1.5px solid #e2e8f0;
+        background: white;
+        font-weight: 700;
+        color: #4e46e5;
+        cursor: pointer;
+    }
+</style>
+
+<div class="flats-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="{{ url_for('blocks.list_blocks', society_id=block.society_id) }}" 
+               style="text-decoration: none; color: #64748b; font-size: 20px; background: white; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 14px; border: 1px solid #e2e8f0;">
+               ←
+            </a>
+            <h1 style="margin: 0; font-size: 26px; color: #1e293b;">🏠 Unit Inventory</h1>
+        </div>
+        
+        <div style="margin-top: 15px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 14px; color: #94a3b8; font-weight: 600;">BLOCK:</span>
+            <select class="block-switcher" onchange="window.location.href='/flats/' + this.value">
+                {% for b in all_blocks %}
+                    <option value="{{ b.id }}" {% if b.id == block.id %}selected{% endif %}>{{ b.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="unit-grid">
+    {% for flat in flats %}
+    <div class="unit-card">
+        <div>
+            <div class="unit-top">
+                <span class="unit-number">{{ flat.flat_number }}</span>
+                {% if flat.owner_name or flat.tenant_name %}
+                    <span class="status-badge status-occupied">Occupied</span>
+                {% else %}
+                    <span class="status-badge status-vacant">Vacant</span>
+                {% endif %}
+            </div>
+
+            <div class="resident-box">
+                {% if flat.owner_name %}
+                <div class="resident-row">
+                    <span>👑 <span class="name-tag">{{ flat.owner_name }}</span></span>
+                    <span style="font-size: 10px; color: #94a3b8;">OWNER</span>
+                </div>
+                {% endif %}
+
+                {% if flat.tenant_name %}
+                <div class="resident-row">
+                    <span>👤 <span class="name-tag">{{ flat.tenant_name }}</span></span>
+                    <form action="{{ url_for('flats.unassign', flat_id=flat.id, role='tenant') }}" method="POST" style="margin:0;">
+                        <button type="submit" class="btn-remove" onclick="return confirm('Remove tenant?')">Remove</button>
+                    </form>
+                </div>
+                {% endif %}
+
+                {% if not flat.owner_name and not flat.tenant_name %}
+                <p style="font-style: italic; color: #cbd5e1; margin: 10px 0;">No residents assigned</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ADMIN ACTION FOOTER -->
+        {% if session.user.role == 'admin' %}
+        <div class="assign-area">
+            <form action="{{ url_for('flats.assign_flat', flat_id=flat.id) }}" method="POST">
+                <select name="role" class="assign-select">
+                    <option value="owner">Assign as Owner</option>
+                    <option value="tenant">Assign as Tenant</option>
+                </select>
+                <select name="user_id" class="assign-select" required>
+                    <option value="">Choose Resident...</option>
+                    <optgroup label="Owners">
+                        {% for o in owners %}<option value="{{ o.id }}">{{ o.full_name }}</option>{% endfor %}
+                    </optgroup>
+                    <optgroup label="Tenants">
+                        {% for t in tenants %}<option value="{{ t.id }}">{{ t.full_name }}</option>{% endfor %}
+                    </optgroup>
+                </select>
+                <button type="submit" class="btn-assign">Assign Unit</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

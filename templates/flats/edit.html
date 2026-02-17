@@ -1,0 +1,19 @@
+{% extends "layout/base.html" %}
+{% block content %}
+
+<h2>Edit Flat</h2>
+
+<form method="POST">
+  Block ID: <input name="block_id" value="{{ flat.block_id }}"><br><br>
+  Flat Number: <input name="flat_number" value="{{ flat.flat_number }}"><br><br>
+
+  Occupied:
+  <select name="is_occupied">
+    <option value="true" {% if flat.is_occupied %}selected{% endif %}>Yes</option>
+    <option value="false" {% if not flat.is_occupied %}selected{% endif %}>No</option>
+  </select><br><br>
+
+  <button type="submit">Update</button>
+</form>
+
+{% endblock %}

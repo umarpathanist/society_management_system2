@@ -1,0 +1,41 @@
+{% extends "layout/base.html" %}
+{% block title %}Edit Treasurer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📝 Edit Treasurer</h1>
+</div>
+
+<div class="card" style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 600px;">
+    <form method="POST">
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Full Name</label>
+            <input type="text" name="full_name" value="{{ treasurer.full_name }}" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Email Address</label>
+            <input type="email" name="email" value="{{ treasurer.email }}" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500;">New Password (leave blank to keep current)</label>
+            <input type="password" name="password" autocomplete="new-password" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;">
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Society</label>
+            <select name="society_id" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; background: white;">
+                {% for s in societies %}
+                    <option value="{{ s.id }}" {% if s.id == treasurer.society_id %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 15px;">
+            <button type="submit" style="background: #4e46e5; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">Update</button>
+            <a href="{{ url_for('treasurers.list') }}" style="padding: 12px 24px; color: #6b7280; text-decoration: none;">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

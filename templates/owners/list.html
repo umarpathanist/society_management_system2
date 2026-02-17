@@ -1,0 +1,253 @@
+{% extends "layout/base.html" %}
+{% block title %}Resident Directory{% endblock %}
+
+{% block content %}
+<style>
+    /* 1. Header Layout - Moves button to the right */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+    }
+
+    .page-title-group h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.5px;
+        margin: 0;
+    }
+
+    .page-title-group p {
+        color: #94a3b8;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+
+    /* 2. Resident Card Grid */
+    .resident-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 25px;
+    }
+
+    .resident-card {
+        background: white;
+        border-radius: 24px;
+        padding: 30px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .resident-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
+        border-color: #e2e8f0;
+    }
+
+    /* 3. Role Ribbon */
+    .role-ribbon {
+        position: absolute;
+        top: 20px;
+        right: -35px;
+        width: 120px;
+        transform: rotate(45deg);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 4px 0;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .role-owner { background: #4f46e5; color: white; }
+    .role-tenant { background: #f59e0b; color: white; }
+
+    /* 4. Avatar Design */
+    .avatar-wrapper {
+        width: 80px;
+        height: 80px;
+        border-radius: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: white;
+        background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+        box-shadow: 0 8px 16px rgba(79, 70, 229, 0.2);
+    }
+
+    .tenant-avatar { 
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+        box-shadow: 0 8px 16px rgba(245, 158, 11, 0.2); 
+    }
+
+    /* 5. Content Styling */
+    .res-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 5px;
+        text-transform: capitalize;
+    }
+
+    .res-email {
+        font-size: 13px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 20px;
+    }
+
+    .res-meta {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 20px;
+        margin-top: auto;
+    }
+
+    /* 6. Action Buttons */
+    .btn-edit-round {
+        flex: 1;
+        background: #f8fafc;
+        color: #475569;
+        text-decoration: none;
+        padding: 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s;
+        text-align: center;
+    }
+
+    .btn-edit-round:hover {
+        background: #eef2ff;
+        color: #4e46e5;
+    }
+
+    .btn-delete-round {
+        width: 40px;
+        height: 40px;
+        background: #fff1f2;
+        color: #e11d48;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .btn-delete-round:hover {
+        background: #e11d48;
+        color: white;
+    }
+
+    .btn-add-primary {
+        background: #0f172a;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 14px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    }
+
+    .btn-add-primary:hover {
+        transform: translateY(-2px);
+        background: #1e293b;
+    }
+</style>
+
+<!-- PAGE HEADER (BUTTON ON RIGHT) -->
+<div class="page-header">
+    <div class="page-title-group">
+        <h1>Directory</h1>
+        <p>Verified residents of the society network.</p>
+    </div>
+    
+    {% if session.user.role == "admin" %}
+    <a href="{{ url_for('owners.add_owner') }}" class="btn-add-primary">
+        + Register Resident
+    </a>
+    {% endif %}
+</div>
+
+<!-- GRID SYSTEM -->
+<div class="resident-grid">
+    {% if users %}
+        {% for user in users %}
+        <div class="resident-card">
+            <!-- Floating Role Label -->
+            <div class="role-ribbon {% if user.role == 'owner' %}role-owner{% else %}role-tenant{% endif %}">
+                {{ user.role }}
+            </div>
+
+            <!-- Avatar -->
+            <div class="avatar-wrapper {% if user.role == 'tenant' %}tenant-avatar{% endif %}">
+                {{ user.full_name[0] | upper }}
+            </div>
+
+            <!-- Identity -->
+            <div class="res-name">{{ user.full_name }}</div>
+            <div class="res-email">
+                <span>📧</span> {{ user.email }}
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="res-meta">
+                <a href="{{ url_for('owners.edit_owner', id=user.id) }}" class="btn-edit-round">
+                    Edit Profile
+                </a>
+                
+                <form action="{{ url_for('owners.delete_owner', id=user.id) }}" method="POST" onsubmit="return confirm('Archive this resident?')" style="margin: 0;">
+                    <button type="submit" class="btn-delete-round" title="Delete">
+                        🗑️
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <!-- Empty State -->
+        <div style="grid-column: 1 / -1; background: white; padding: 80px; border-radius: 30px; text-align: center; border: 2px dashed #e2e8f0;">
+            <span style="font-size: 50px; display: block; margin-bottom: 20px;">🧐</span>
+            <h3 style="color: #64748b;">No Residents Registered</h3>
+            <p style="color: #94a3b8;">Start building your community by adding your first owner or tenant.</p>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

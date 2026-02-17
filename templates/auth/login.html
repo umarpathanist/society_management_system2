@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to SocietyHQ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-primary: #4f46e5;
+            --brand-secondary: #818cf8;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --bg-light: #f8fafc;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: white;
+            overflow: hidden;
+        }
+
+        .split-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- LEFT SIDE: THE BRAND VISUAL --- */
+        .brand-side {
+            flex: 1.2;
+            background: linear-gradient(135deg, var(--brand-primary) 0%, #312e81 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            padding: 60px;
+            position: relative;
+        }
+
+        /* Abstract Background Decoration */
+        .brand-side::before {
+            content: "";
+            position: absolute;
+            top: -10%; right: -10%;
+            width: 400px; height: 400px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+        }
+
+        .brand-content {
+            z-index: 2;
+            text-align: left;
+            max-width: 450px;
+        }
+
+        .brand-logo-icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .brand-content h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        .brand-content p {
+            font-size: 18px;
+            opacity: 0.8;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        /* --- RIGHT SIDE: THE LOGIN FORM --- */
+        .form-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            background: var(--bg-light);
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h2 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .login-box .lead {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #475569;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            background: white;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--brand-primary);
+            color: white;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+        }
+
+        .forgot-link {
+            display: block;
+            text-align: center;
+            margin-top: 24px;
+            color: var(--brand-primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .forgot-link:hover { text-decoration: underline; }
+
+        /* Alerts Styling */
+        .alert {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border-left: 5px solid;
+        }
+        .alert-danger { background: #fee2e2; color: #b91c1c; border-left-color: #ef4444; }
+        .alert-info { background: #e0f2fe; color: #0369a1; border-left-color: #0ea5e9; }
+
+        @media (max-width: 900px) {
+            .brand-side { display: none; }
+            .form-side { background: white; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="split-container">
+        <!-- BRANDING SIDE -->
+        <div class="brand-side">
+            <div class="brand-content">
+                <span class="brand-logo-icon">🏢 SocietyHQ</span>
+                <h1>Intelligence in Community Living.</h1>
+                <p>Welcome to SocietyHQ. The ultimate operating system for modern housing societies, designed for efficiency and transparency.</p>
+            </div>
+        </div>
+
+        <!-- LOGIN SIDE -->
+        <div class="form-side">
+            <div class="login-box">
+                <h2>Welcome Back</h2>
+                <p class="lead">Please enter your credentials to access the portal.</p>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" name="email" id="email" placeholder="name@society.com" required autocomplete="username">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" name="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+
+                    <button type="submit" class="btn-submit">Sign In to Dashboard</button>
+                </form>
+
+                <a href="{{ url_for('auth.forgot_password') }}" class="forgot-link">Forgot your password?</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

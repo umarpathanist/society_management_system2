@@ -1,0 +1,195 @@
+{% extends "layout/base.html" %}
+{% block title %}System Access - Admins{% endblock %}
+
+{% block content %}
+<style>
+    /* Premium Admin Module Styling */
+    .admins-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+    }
+
+    .admin-card-row {
+        background: white;
+        border-radius: 20px;
+        padding: 22px 30px;
+        margin-bottom: 16px;
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 2fr;
+        align-items: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .admin-card-row:hover {
+        transform: scale(1.005) translateX(8px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+        border-color: #4e46e5;
+    }
+
+    .admin-identity {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .admin-avatar {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        font-size: 20px;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+    }
+
+    .admin-name {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+
+    .admin-email {
+        font-size: 13px;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+
+    /* Workspace Badge */
+    .workspace-pill {
+        background: #f0fdf4;
+        border: 1px solid #dcfce7;
+        padding: 8px 16px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #166534;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .unassigned-pill {
+        background: #fef2f2;
+        border: 1px dashed #fecaca;
+        color: #991b1b;
+    }
+
+    /* Actions Styling */
+    .admin-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .btn-adm {
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-reassign { background: #eef2ff; color: #4e46e5; }
+    .btn-reassign:hover { background: #4e46e5; color: white; }
+
+    .btn-edit { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+    .btn-edit:hover { background: #e2e8f0; color: #1e293b; }
+
+    .btn-delete { background: #fff1f2; color: #e11d48; }
+    .btn-delete:hover { background: #e11d48; color: white; }
+
+    .list-header {
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 2fr;
+        padding: 0 30px 15px 30px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+    }
+</style>
+
+<div class="admins-header">
+    <div>
+        <h1 style="margin: 0; font-size: 26px; color: #1e293b;">🛡️ System Access Control</h1>
+        <p style="color: #64748b; margin-top: 5px;">Manage society-level administrators and their assigned workspaces.</p>
+    </div>
+    
+    {% if session.user.role == 'super_admin' %}
+    <a href="{{ url_for('admin.add_admin') }}" 
+       style="background: #4e46e5; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+       + Create Admin
+    </a>
+    {% endif %}
+</div>
+
+<!-- List Header -->
+<div class="list-header">
+    <div>Administrator</div>
+    <div>Assigned Workspace</div>
+    <div style="text-align: right;">Management</div>
+</div>
+
+{% for admin in admins %}
+<div class="admin-card-row">
+    <!-- 1. Admin Info -->
+    <div class="admin-identity">
+        <div class="admin-avatar">👤</div>
+        <div>
+            <div class="admin-name">{{ admin.full_name }}</div>
+            <div class="admin-email">{{ admin.email }}</div>
+        </div>
+    </div>
+
+    <!-- 2. Society Workspace -->
+    <div>
+        {% if admin.society_name %}
+            <div class="workspace-pill">
+                <span>🏙️</span> {{ admin.society_name }}
+            </div>
+        {% else %}
+            <div class="workspace-pill unassigned-pill">
+                <span>⚠️</span> Not Assigned
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 3. Action Group -->
+    <div class="admin-actions">
+        <a href="{{ url_for('admin.assign_society', admin_id=admin.id) }}" class="btn-adm btn-reassign">
+            {% if admin.society_name %}Reassign{% else %}Assign Society{% endif %}
+        </a>
+
+        {% if session.user.role == 'super_admin' %}
+            <a href="{{ url_for('admin.edit_admin', user_id=admin.id) }}" class="btn-adm btn-edit">Edit</a>
+            
+            <form action="{{ url_for('admin.delete_admin', user_id=admin.id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Permanently remove this admin?')">
+                <button type="submit" class="btn-adm btn-delete">Delete</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="card" style="background: white; border-radius: 24px; padding: 80px 20px; text-align: center; border: 2px dashed #e2e8f0;">
+    <span style="font-size: 50px; display: block; margin-bottom: 20px;">🛡️</span>
+    <h3 style="color: #64748b;">No Administrators Registered</h3>
+    <p style="color: #94a3b8;">System security requires at least one admin. Click the button above to begin.</p>
+</div>
+{% endfor %}
+
+{% endblock %}
