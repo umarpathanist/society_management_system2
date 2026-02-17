@@ -1,1 +1,22 @@
 pip install Flask-APScheduler
+# Web Framework
+Flask==3.0.3
+
+# PostgreSQL Database Adapter
+psycopg2-binary==2.9.9
+
+# Email Functionality
+Flask-Mail==0.9.1
+
+# Automation & Scheduler
+Flask-APScheduler==1.15.0
+
+# Security & Utilities
+Werkzeug==3.0.3
+python-dotenv==1.0.1
+
+# Production WSGI Server (Crucial for Render Deployment)
+gunicorn==22.0.0
+
+# Optional: For better data handling if used
+pytz==2024.1
