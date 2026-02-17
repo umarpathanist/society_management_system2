@@ -14,7 +14,7 @@ venv/
 .env
 
 # Config secrets
-config.py
+# config.py
 
 # Database
 *.db
