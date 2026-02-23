@@ -94,7 +94,7 @@
 
 import os
 from dotenv import load_dotenv
-from flask import Flask, redirect, url_for
+from flask import Flask, app, redirect, url_for
 from flask_apscheduler import APScheduler
 
 # 1. Import Configuration and Extensions
@@ -157,6 +157,16 @@ def create_app():
     app.register_blueprint(income_bp)
     app.register_blueprint(expenses_bp)
     app.register_blueprint(reports_bp)
+
+
+    app = Flask(__name__)
+
+    app.config["MAIL_SERVER"] = 'smtp.gmail.com'
+    app.config["MAIL_PORT"] = 587
+    app.config["MAIL_USE_TLS"] = True
+    app.config["MAIL_USERNAME"] = 'umarpathanist@gmail.com'
+    app.config["MAIL_PASSWORD"] = 'hiamihhtqusafkry'
+    app.config["MAIL_DEFAULT_SENDER"] = 'umarpathanist@gmail.com'
 
     # Register Context Processors
     app.context_processor(load_sidebar_blocks)

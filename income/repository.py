@@ -141,3 +141,46 @@ class IncomeRepository:
         finally:
             cur.close()
             conn.close()
+        
+    # income/repository.py
+
+    @staticmethod
+    def get_combined_ledger(society_id):
+        """
+        Fetches both Maintenance payments and Other Income.
+        Standardizes column names to prevent 'UndefinedError'.
+        """
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            cur.execute("""
+                -- 1. Get Paid Maintenance
+                SELECT 
+                    m.created_at::date as tr_date, 
+                    'Maintenance' as category, 
+                    'Flat ' || f.flat_number || ' (' || b.name || ')' as description, 
+                    m.month || ' ' || m.year as period, 
+                    m.amount
+                FROM maintenance m
+                JOIN flats f ON m.flat_id = f.id
+                JOIN blocks b ON f.block_id = b.id
+                WHERE b.society_id = %s AND m.status = 'paid'
+
+                UNION ALL
+
+                -- 2. Get Other Income
+                SELECT 
+                    income_date as tr_date, 
+                    source_name as category, 
+                    COALESCE(description, 'No notes') as description, 
+                    'N/A' as period, 
+                    amount
+                FROM other_income
+                WHERE society_id = %s
+                
+                ORDER BY tr_date DESC
+            """, (society_id, society_id))
+            return cur.fetchall()
+        finally:
+            cur.close()
+            conn.close()
