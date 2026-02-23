@@ -367,13 +367,139 @@
 
 
 
+# from database.connection import get_db_connection
+# from psycopg2.extras import RealDictCursor
+
+# class FlatRepository:
+
+#     # ======================================================
+#     # 1. GET BY ID (FIXES: AttributeError)
+#     # ======================================================
+#     @staticmethod
+#     def get_by_id(flat_id):
+#         """Fetches a single flat record with society context."""
+#         conn = get_db_connection()
+#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         try:
+#             cur.execute("""
+#                 SELECT f.*, b.society_id
+#                 FROM flats f
+#                 JOIN blocks b ON b.id = f.block_id
+#                 WHERE f.id = %s
+#             """, (flat_id,))
+#             return cur.fetchone()
+#         finally:
+#             cur.close()
+#             conn.close()
+
+#     # ======================================================
+#     # 2. LISTING & SEARCHING
+#     # ======================================================
+#     @staticmethod
+#     def get_by_block(block_id):
+#         """Fetches flats for a block in floor-wise order (1, 2, 3...)."""
+#         conn = get_db_connection()
+#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         try:
+#             cur.execute("""
+#                 SELECT f.*, uo.full_name as owner_name, ut.full_name as tenant_name
+#                 FROM flats f
+#                 LEFT JOIN users uo ON f.owner_id = uo.id
+#                 LEFT JOIN users ut ON f.tenant_id = ut.id
+#                 WHERE f.block_id = %s
+#                 ORDER BY f.floor_number ASC, f.flat_number ASC
+#             """, (block_id,))
+#             return cur.fetchall()
+#         finally:
+#             cur.close()
+#             conn.close()
+
+#     @staticmethod
+#     def get_occupied_by_society(society_id):
+#         """Used for automated billing."""
+#         conn = get_db_connection()
+#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         try:
+#             cur.execute("""
+#                 SELECT f.id FROM flats f
+#                 JOIN blocks b ON f.block_id = b.id
+#                 WHERE b.society_id = %s AND f.is_occupied = TRUE
+#             """, (society_id,))
+#             return cur.fetchall()
+#         finally:
+#             cur.close()
+#             conn.close()
+
+#     @staticmethod
+#     def get_occupied_with_maintenance(block_id):
+#         """Used for manual payment dropdown."""
+#         conn = get_db_connection()
+#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         try:
+#             cur.execute("""
+#                 SELECT DISTINCT f.id, f.flat_number 
+#                 FROM flats f
+#                 JOIN maintenance m ON f.id = m.flat_id
+#                 WHERE f.block_id = %s AND f.is_occupied = TRUE
+#                 ORDER BY f.flat_number ASC
+#             """, (block_id,))
+#             return cur.fetchall()
+#         finally:
+#             cur.close()
+#             conn.close()
+
+#     # ======================================================
+#     # 3. UPDATING & ASSIGNING
+#     # ======================================================
+#     @staticmethod
+#     def assign_user(flat_id, user_id, role):
+#         """Links user to flat and marks as occupied."""
+#         conn = get_db_connection()
+#         cur = conn.cursor()
+#         column = "owner_id" if role == "owner" else "tenant_id"
+#         try:
+#             cur.execute(f"UPDATE flats SET {column} = %s, is_occupied = TRUE WHERE id = %s", (user_id, flat_id))
+#             conn.commit()
+#             return True
+#         finally:
+#             cur.close()
+#             conn.close()
+
+#     @staticmethod
+#     def unassign_user(flat_id, role):
+#         """Removes user from flat."""
+#         conn = get_db_connection()
+#         cur = conn.cursor()
+#         column = "owner_id" if role == "owner" else "tenant_id"
+#         try:
+#             cur.execute(f"UPDATE flats SET {column} = NULL WHERE id = %s", (flat_id,))
+#             conn.commit()
+#             return True
+#         finally:
+#             cur.close()
+#             conn.close()
+
+#     @staticmethod
+#     def create_multiple(flats_list):
+#         conn = get_db_connection()
+#         cur = conn.cursor()
+#         try:
+#             query = "INSERT INTO flats (block_id, flat_number, floor_number) VALUES (%s, %s, %s)"
+#             for f in flats_list:
+#                 cur.execute(query, (f['block_id'], f['flat_number'], f['floor_number']))
+#             conn.commit()
+#             return True
+#         finally:
+#             cur.close()
+#             conn.close()
+
 from database.connection import get_db_connection
 from psycopg2.extras import RealDictCursor
 
 class FlatRepository:
 
     # ======================================================
-    # 1. GET BY ID (FIXES: AttributeError)
+    # 1. GET BY ID
     # ======================================================
     @staticmethod
     def get_by_id(flat_id):
@@ -395,6 +521,28 @@ class FlatRepository:
     # ======================================================
     # 2. LISTING & SEARCHING
     # ======================================================
+    
+    @staticmethod
+    def get_all_by_society(society_id):
+        """
+        NEW METHOD: Fetches all flats belonging to a specific society.
+        Required for generating bulk maintenance bills.
+        """
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            cur.execute("""
+                SELECT f.* 
+                FROM flats f
+                JOIN blocks b ON f.block_id = b.id
+                WHERE b.society_id = %s
+                ORDER BY f.flat_number ASC
+            """, (society_id,))
+            return cur.fetchall()
+        finally:
+            cur.close()
+            conn.close()
+
     @staticmethod
     def get_by_block(block_id):
         """Fetches flats for a block in floor-wise order (1, 2, 3...)."""
@@ -425,24 +573,6 @@ class FlatRepository:
                 JOIN blocks b ON f.block_id = b.id
                 WHERE b.society_id = %s AND f.is_occupied = TRUE
             """, (society_id,))
-            return cur.fetchall()
-        finally:
-            cur.close()
-            conn.close()
-
-    @staticmethod
-    def get_occupied_with_maintenance(block_id):
-        """Used for manual payment dropdown."""
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        try:
-            cur.execute("""
-                SELECT DISTINCT f.id, f.flat_number 
-                FROM flats f
-                JOIN maintenance m ON f.id = m.flat_id
-                WHERE f.block_id = %s AND f.is_occupied = TRUE
-                ORDER BY f.flat_number ASC
-            """, (block_id,))
             return cur.fetchall()
         finally:
             cur.close()

@@ -141,7 +141,7 @@
         <!-- Dropdown -->
         <select onchange="window.location.href='?society_id=' + this.value" 
                 style="border: none; outline: none; font-weight: 700; color: #4e46e5; background: transparent; cursor: pointer; font-size: 14px; padding-right: 5px;">
-            <option value="">-- All Societies --</option>
+            <option value="">-- Select Societies --</option>
             {% for s in societies %}
                 <option value="{{ s.id }}" {% if s.id == selected_soc %}selected{% endif %}>{{ s.name }}</option>
             {% endfor %}

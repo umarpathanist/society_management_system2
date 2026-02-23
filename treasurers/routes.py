@@ -452,19 +452,93 @@ def collect_maintenance():
 @login_required
 @role_required("treasurer", "super_admin")
 def generate_maintenance():
+    """
+    Handles manual billing generation and instant email reminders.
+    FIXED: Missing FROM-clause (JOIN) and database cursor initialization.
+    """
     society_id = session.get("society_id")
+    
     if request.method == "POST":
-        amount = request.form.get("amount")
-        month = request.form.get("month")
-        year = request.form.get("year")
-        due_date = request.form.get("due_date")
+        action = request.form.get("action")
+        
+        # 1. Open a shared connection for both actions
+        from database.connection import get_db_connection
+        from psycopg2.extras import RealDictCursor
+        from utils.mail import send_maintenance_reminder
+        
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        flats = FlatRepository.get_all_by_society(society_id)
-        if flats:
-            flat_ids = [f['id'] for f in flats]
-            MaintenanceRepository.bulk_create_maintenance(flat_ids, amount, month, year, due_date)
-            flash("Monthly bills generated! ✅", "success")
-        return redirect(url_for("dashboard.index"))
+        try:
+            # ---------------------------------------------------------
+            # ACTION 1: MANUAL BILL GENERATION
+            # ---------------------------------------------------------
+            if action == "generate":
+                amount = request.form.get("amount")
+                month = request.form.get("month")
+                year = request.form.get("year")
+                due_date = request.form.get("due_date")
+
+                if not all([amount, month, year, due_date]):
+                    flash("Missing billing details. Please fill all fields.", "danger")
+                    return redirect(url_for("treasurers.generate_maintenance"))
+
+                # Fetch flats for this society
+                flats = FlatRepository.get_all_by_society(society_id)
+                if not flats:
+                    flash("No flats found in your society to bill.", "warning")
+                    return redirect(url_for("treasurers.generate_maintenance"))
+
+                flat_ids = [f['id'] for f in flats]
+                
+                # Call Repo to save to DB
+                MaintenanceRepository.bulk_create_maintenance(
+                    flat_ids, float(amount), month, int(year), due_date
+                )
+                flash(f"Success! Bills generated for {len(flat_ids)} units. ✅", "success")
+
+            # ---------------------------------------------------------
+            # ACTION 2: INSTANT EMAIL REMINDERS (FIXED SQL)
+            # ---------------------------------------------------------
+            elif action == "remind":
+                # FIXED: Added 'JOIN blocks b' so the WHERE clause can see 'b.society_id'
+                cur.execute("""
+                    SELECT 
+                        u.email, 
+                        u.full_name, 
+                        m.amount, 
+                        m.month, 
+                        m.year 
+                    FROM maintenance m
+                    JOIN flats f ON m.flat_id = f.id
+                    JOIN blocks b ON f.block_id = b.id
+                    JOIN users u ON f.owner_id = u.id
+                    WHERE b.society_id = %s 
+                      AND m.status = 'unpaid'
+                      AND u.email IS NOT NULL
+                """, (society_id,))
+                
+                unpaid_members = cur.fetchall()
+                
+                if unpaid_members:
+                    for member in unpaid_members:
+                        send_maintenance_reminder(
+                            member['email'], member['full_name'], 
+                            member['amount'], member['month'], member['year']
+                        )
+                    flash(f"Manual reminders sent to {len(unpaid_members)} residents! 📩", "info")
+                else:
+                    flash("Everyone is up to date! No reminders needed. ✨", "success")
+
+            return redirect(url_for("dashboard.index"))
+
+        except Exception as e:
+            print(f"CRITICAL ERROR: {e}")
+            flash(f"An error occurred: {str(e)}", "danger")
+            if conn: conn.rollback()
+        finally:
+            cur.close()
+            conn.close()
 
     return render_template("treasurers/generate_maintenance.html")
 
