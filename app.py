@@ -163,9 +163,8 @@ def create_app():
     app.context_processor(inject_current_user)
 
     @app.route("/")
-    
     def home():
-        return redirect(url_for("/login"))
+        return redirect(url_for("auth.login"))
 
     return app
 
