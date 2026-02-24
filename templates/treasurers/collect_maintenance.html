@@ -79,14 +79,22 @@ const statusBox = document.getElementById('status_box');
 const startText = document.getElementById('starting_period_text');
 const submitBtn = document.getElementById('submit_btn');
 
-// 1. Logic to load flats based on block
+// Advance period inputs
+const endMonthSelect = document.querySelector('select[name="end_month"]');
+const endYearInput = document.querySelector('input[name="end_year"]');
+
+const monthsList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+let startMonthIndex = 0;
+let startYear = 0;
+
+// 1. Load flats based on block
 blockSelect.addEventListener('change', function() {
     flatSelect.disabled = true;
     statusBox.style.display = 'none';
     submitBtn.disabled = true;
     submitBtn.innerText = "Select a Flat to Continue";
     submitBtn.style.background = "#94a3b8";
-    submitBtn.style.cursor = "not-allowed";
 
     if (!this.value) return;
 
@@ -98,11 +106,10 @@ blockSelect.addEventListener('change', function() {
                 flatSelect.innerHTML += `<option value="${f.id}">${f.flat_number}</option>`;
             });
             flatSelect.disabled = false;
-            flatSelect.style.background = 'white';
         });
 });
 
-// 2. Logic to detect starting point and enable button
+// 2. Fetch start period and restrict Advance selector
 flatSelect.addEventListener('change', function() {
     if(!this.value) { 
         statusBox.style.display = 'none'; 
@@ -112,24 +119,67 @@ flatSelect.addEventListener('change', function() {
 
     statusBox.style.display = 'block';
     startText.innerText = "Checking records...";
-    submitBtn.disabled = true; // Stay disabled until fetch finishes
-    submitBtn.innerText = "Loading history...";
 
     fetch(`/treasurers/get-next-unpaid/${this.value}`)
         .then(res => res.json())
         .then(data => {
             if(data.month) {
+                // Store start values
+                startMonthIndex = monthsList.indexOf(data.month);
+                startYear = parseInt(data.year);
+
+                // Update UI text and hidden inputs
                 startText.innerText = `${data.month} ${data.year}`;
                 document.getElementById('hidden_start_month').value = data.month;
                 document.getElementById('hidden_start_year').value = data.year;
                 
-                // ENABLE BUTTON
+                // AUTO-SYNC Advance fields to the start date
+                endYearInput.value = startYear;
+                endYearInput.min = startYear;
+                endMonthSelect.value = data.month;
+
+                // Run restriction logic
+                updateMonthRestrictions();
+
+                // Enable button
                 submitBtn.disabled = false;
                 submitBtn.innerText = "🚀 Process Payment";
                 submitBtn.style.background = "#4e46e5";
                 submitBtn.style.cursor = "pointer";
+            } else {
+                startText.innerText = "Account already paid in full.";
+                submitBtn.disabled = true;
             }
         });
 });
+
+// 3. Dynamic month/year restriction logic
+function updateMonthRestrictions() {
+    const selectedYear = parseInt(endYearInput.value);
+
+    // If selected year is the SAME as the start year, disable previous months
+    if (selectedYear === startYear) {
+        Array.from(endMonthSelect.options).forEach((option, index) => {
+            if (index < startMonthIndex) {
+                option.disabled = true;
+            } else {
+                option.disabled = false;
+            }
+        });
+        
+        // If user was on a restricted month, jump them to the start month
+        if (monthsList.indexOf(endMonthSelect.value) < startMonthIndex) {
+            endMonthSelect.value = monthsList[startMonthIndex];
+        }
+    } else {
+        // If year is in future, all months are allowed
+        Array.from(endMonthSelect.options).forEach(option => option.disabled = false);
+    }
+}
+
+// Attach listeners to the Advance fields
+endYearInput.addEventListener('change', updateMonthRestrictions);
+endMonthSelect.addEventListener('change', updateMonthRestrictions);
+
 </script>
 {% endblock %}

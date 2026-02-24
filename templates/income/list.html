@@ -1,49 +1,53 @@
 {% extends "layout/base.html" %}
-{% block title %}Income Ledger{% endblock %}
+{% block title %}Income Ledger | SocietyHQ{% endblock %}
 
 {% block content %}
 <style>
-    /* UI Styling */
-    .ledger-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+    /* 1. Header & Filter Layout */
+    .ledger-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
     .filter-pill { background: #fff; padding: 10px 24px; border-radius: 50px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-top: 20px; width: fit-content; }
-    .ledger-feed { display: flex; flex-direction: column; gap: 12px; }
     
+    /* 2. Grid & Feed Styling */
+    .ledger-labels {
+        display: grid;
+        grid-template-columns: 120px 1.5fr 2fr 150px 150px;
+        padding: 0 35px 15px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+    }
+
+    .ledger-feed { display: flex; flex-direction: column; gap: 15px; }
+
     .transaction-card {
         background: white;
         border-radius: 20px;
-        padding: 20px 30px;
+        padding: 25px 35px;
         display: grid;
         grid-template-columns: 120px 1.5fr 2fr 150px 150px;
         align-items: center;
         border: 1px solid #f1f5f9;
         transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
     .transaction-card:hover { transform: translateX(10px); border-color: #4e46e5; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.08); }
 
-    .col-date { font-size: 13px; color: #94a3b8; font-weight: 600; }
-    .item-category { font-weight: 700; color: #1e293b; font-size: 15px; }
-    .item-description { font-size: 13px; color: #64748b; line-height: 1.4; padding-right: 20px; }
-    .item-type-badge { font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; width: fit-content; margin-top: 5px; }
+    /* 3. Column Content Styling */
+    .col-date { font-size: 14px; color: #94a3b8; font-weight: 600; }
+    .cat-name { font-weight: 700; color: #1e293b; font-size: 16px; display: block; }
+    .cat-badge { font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; margin-top: 5px; display: inline-block; }
     .badge-maint { background: #e0f2fe; color: #0369a1; }
-    .badge-other { background: #f3f4f6; color: #475569; }
-    .col-period { font-size: 13px; font-weight: 600; color: #475569; }
+    .badge-other { background: #f1f5f9; color: #475569; }
+    .col-desc { font-size: 13px; color: #64748b; padding-right: 20px; line-height: 1.4; }
+    .col-period { font-size: 13px; color: #475569; font-weight: 600; }
     .col-amount { text-align: right; font-size: 20px; font-weight: 800; color: #10b981; }
 
-    .ledger-labels {
-        display: grid;
-        grid-template-columns: 120px 1.5fr 2fr 150px 150px;
-        padding: 0 30px 15px;
-        color: #94a3b8;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-    }
-    
-    /* Buttons Styling */
-    .btn-action { background: #4e46e5; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); border: none; transition: 0.2s; }
-    .btn-action:hover { background: #4338ca; }
-    
+    /* 4. Buttons */
+    .btn-action { background: #4e46e5; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2); transition: all 0.2s; border: none; cursor: pointer; }
+    .btn-action:hover { background: #4338ca; transform: translateY(-2px); }
+    .btn-action.disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; box-shadow: none; pointer-events: none; }
     .btn-back { background: #f1f5f9; color: #64748b; padding: 12px 20px; border-radius: 14px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.2s; }
     .btn-back:hover { background: #e2e8f0; color: #1e293b; }
 </style>
@@ -68,13 +72,22 @@
         {% endif %}
     </div>
 
-    <!-- BUTTONS AREA -->
+    <!-- BUTTONS AREA (Restricted by Role) -->
     <div style="display: flex; gap: 12px; align-items: center;">
-        <!-- BACK BUTTON -->
-        <a href="javascript:history.back()" class="btn-back">← Back</a>
         
-        <!-- ADD INCOME BUTTON -->
-        <a href="{{ url_for('income.add_income') }}" class="btn-action">+ Record Income</a>
+        {% if session.user.role == 'super_admin' %}
+            <a href="javascript:history.back()" class="btn-back">← Back</a>
+        {% endif %}
+        
+        {% if session.user.role == 'super_admin' %}
+            {% if selected_soc %}
+                <a href="{{ url_for('income.add_income', society_id=selected_soc) }}" class="btn-action">+ Record Income</a>
+            {% else %}
+                <button class="btn-action disabled" title="Please select a society first">+ Record Income</button>
+            {% endif %}
+        {% else %}
+            <a href="{{ url_for('income.add_income') }}" class="btn-action">+ Record Income</a>
+        {% endif %}
     </div>
 </div>
 
@@ -92,19 +105,19 @@
         {% for r in records %}
         <div class="transaction-card">
             <div class="col-date">{{ r.tr_date }}</div>
-            <div class="col-info">
-                <div class="item-category">{{ r.category }}</div>
-                <div class="item-type-badge {% if r.category == 'Maintenance' %}badge-maint{% else %}badge-other{% endif %}">
+            <div>
+                <span class="cat-name">{{ r.category }}</span>
+                <span class="cat-badge {% if r.category == 'Maintenance' %}badge-maint{% else %}badge-other{% endif %}">
                     {{ r.category }}
-                </div>
+                </span>
             </div>
-            <div class="item-description">{{ r.description }}</div>
+            <div class="col-desc">{{ r.description }}</div>
             <div class="col-period">{{ r.period }}</div>
             <div class="col-amount">+ ₹{{ "{:,.2f}".format(r.amount) }}</div>
         </div>
         {% endfor %}
     {% else %}
-        <div style="background: white; border-radius: 24px; padding: 80px; text-align: center; border: 2px dashed #e2e8f0;">
+        <div style="background: white; border-radius: 24px; padding: 80px; text-align: center; border: 2px dashed #e2e8f0; margin-top: 20px;">
             <span style="font-size: 50px; display: block; margin-bottom: 20px;">📋</span>
             <h3 style="color: #64748b;">No Records Available</h3>
             <p style="color: #94a3b8;">Select a society or record a transaction to view data.</p>

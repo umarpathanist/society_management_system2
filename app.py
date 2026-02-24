@@ -162,7 +162,6 @@ def create_app():
     app.context_processor(load_sidebar_blocks)
     app.context_processor(inject_current_user)
 
-
     @app.route("/")
     def home():
         return redirect(url_for("auth.login"))

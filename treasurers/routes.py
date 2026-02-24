@@ -453,15 +453,26 @@ def collect_maintenance():
 @role_required("treasurer", "super_admin")
 def generate_maintenance():
     """
-    Handles manual billing generation and instant email reminders.
-    FIXED: Missing FROM-clause (JOIN) and database cursor initialization.
+    Handles manual billing and reminders.
+    FIXED: Fetches societies for the dropdown when Super Admin is logged in.
     """
-    society_id = session.get("society_id")
+    user = session.get("user")
+    role = user.get("role").lower()
+    session_soc_id = session.get("society_id")
     
     if request.method == "POST":
         action = request.form.get("action")
         
-        # 1. Open a shared connection for both actions
+        # Determine target society based on role and form input
+        if role == "super_admin":
+            target_society_id = request.form.get("society_id")
+        else:
+            target_society_id = session_soc_id
+
+        if not target_society_id:
+            flash("Please select a society.", "warning")
+            return redirect(url_for("treasurers.generate_maintenance"))
+
         from database.connection import get_db_connection
         from psycopg2.extras import RealDictCursor
         from utils.mail import send_maintenance_reminder
@@ -481,34 +492,23 @@ def generate_maintenance():
 
                 if not all([amount, month, year, due_date]):
                     flash("Missing billing details. Please fill all fields.", "danger")
-                    return redirect(url_for("treasurers.generate_maintenance"))
-
-                # Fetch flats for this society
-                flats = FlatRepository.get_all_by_society(society_id)
-                if not flats:
-                    flash("No flats found in your society to bill.", "warning")
-                    return redirect(url_for("treasurers.generate_maintenance"))
-
-                flat_ids = [f['id'] for f in flats]
-                
-                # Call Repo to save to DB
-                MaintenanceRepository.bulk_create_maintenance(
-                    flat_ids, float(amount), month, int(year), due_date
-                )
-                flash(f"Success! Bills generated for {len(flat_ids)} units. ✅", "success")
+                else:
+                    flats = FlatRepository.get_all_by_society(target_society_id)
+                    if not flats:
+                        flash("No flats found in the selected society to bill.", "warning")
+                    else:
+                        flat_ids = [f['id'] for f in flats]
+                        MaintenanceRepository.bulk_create_maintenance(
+                            flat_ids, float(amount), month, int(year), due_date
+                        )
+                        flash(f"Success! Bills generated for {len(flat_ids)} units. ✅", "success")
 
             # ---------------------------------------------------------
-            # ACTION 2: INSTANT EMAIL REMINDERS (FIXED SQL)
+            # ACTION 2: INSTANT EMAIL REMINDERS
             # ---------------------------------------------------------
             elif action == "remind":
-                # FIXED: Added 'JOIN blocks b' so the WHERE clause can see 'b.society_id'
                 cur.execute("""
-                    SELECT 
-                        u.email, 
-                        u.full_name, 
-                        m.amount, 
-                        m.month, 
-                        m.year 
+                    SELECT u.email, u.full_name, m.amount, m.month, m.year 
                     FROM maintenance m
                     JOIN flats f ON m.flat_id = f.id
                     JOIN blocks b ON f.block_id = b.id
@@ -516,7 +516,7 @@ def generate_maintenance():
                     WHERE b.society_id = %s 
                       AND m.status = 'unpaid'
                       AND u.email IS NOT NULL
-                """, (society_id,))
+                """, (target_society_id,))
                 
                 unpaid_members = cur.fetchall()
                 
@@ -526,21 +526,31 @@ def generate_maintenance():
                             member['email'], member['full_name'], 
                             member['amount'], member['month'], member['year']
                         )
-                    flash(f"Manual reminders sent to {len(unpaid_members)} residents! 📩", "info")
+                    flash(f"Success: {len(unpaid_members)} reminders sent! 📩", "info")
                 else:
-                    flash("Everyone is up to date! No reminders needed. ✨", "success")
+                    flash("Everyone is up to date! ✨", "success")
 
-            return redirect(url_for("dashboard.index"))
+            return redirect(url_for("treasurers.generate_maintenance"))
 
         except Exception as e:
-            print(f"CRITICAL ERROR: {e}")
-            flash(f"An error occurred: {str(e)}", "danger")
+            flash(f"System Error: {str(e)}", "danger")
             if conn: conn.rollback()
+            return redirect(url_for("treasurers.generate_maintenance"))
         finally:
             cur.close()
             conn.close()
 
-    return render_template("treasurers/generate_maintenance.html")
+    # --- GET REQUEST LOGIC (This was the missing part) ---
+    societies_list = []
+    if role == "super_admin":
+        # We must import and fetch all societies for the dropdown
+        from societies.repository import SocietyRepository
+        societies_list = SocietyRepository.get_all()
+
+    return render_template(
+        "treasurers/generate_maintenance.html", 
+        societies=societies_list # Passing data to HTML
+    )
 
 # ---------------------------------------------------------
 # 6. DELETE TREASURER
