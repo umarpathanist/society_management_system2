@@ -1,64 +1,57 @@
 {% extends "layout/base.html" %}
-{% block title %}Society Expense Ledger{% endblock %}
+{% block title %}Expense Ledger | SocietyHQ{% endblock %}
 
 {% block content %}
 <style>
-    /* UI Layout & Grid Synchronization */
+    /* Shared logic with Income, tweaked colors for Expenses */
     .ledger-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
     .filter-pill { background: #fff; padding: 10px 24px; border-radius: 50px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-top: 20px; width: fit-content; }
-    .ledger-feed { display: flex; flex-direction: column; gap: 12px; }
-
-    /* Unique Expense Card Grid */
-    .expense-card {
-        background: white;
-        border-radius: 20px;
-        padding: 20px 30px;
-        display: grid;
-        grid-template-columns: 120px 1.5fr 1fr 150px;
-        align-items: center;
-        border: 1px solid #f1f5f9;
-        transition: all 0.3s ease;
-    }
-    .expense-card:hover { transform: translateX(10px); border-color: #ef4444; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.08); }
-
-    .col-date { font-size: 13px; color: #94a3b8; font-weight: 600; }
-    .category-title { font-weight: 700; color: #1e293b; font-size: 16px; display: flex; align-items: center; gap: 8px; }
-    .expense-badge { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 8px; background: #fef2f2; color: #991b1b; width: fit-content; margin-top: 5px; }
-    .col-desc { font-size: 14px; color: #64748b; font-weight: 500; }
-    .col-amount { text-align: right; font-size: 20px; font-weight: 800; color: #ef4444; }
-
+    
     .ledger-labels {
         display: grid;
-        grid-template-columns: 120px 1.5fr 1fr 150px;
-        padding: 0 30px 15px;
+        grid-template-columns: 120px 2fr 2.5fr 150px;
+        padding: 0 35px 15px;
         color: #94a3b8;
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 1.5px;
     }
 
-    /* Buttons Styling */
+    .ledger-feed { display: flex; flex-direction: column; gap: 15px; }
+
+    .transaction-card {
+        background: white;
+        border-radius: 20px;
+        padding: 25px 35px;
+        display: grid;
+        grid-template-columns: 120px 2fr 2.5fr 150px;
+        align-items: center;
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    .transaction-card:hover { transform: translateX(10px); border-color: #ef4444; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.08); }
+
+    .col-date { font-size: 14px; color: #94a3b8; font-weight: 600; }
+    .col-category { display: flex; flex-direction: column; gap: 2px; }
+    .cat-name { font-weight: 700; color: #1e293b; font-size: 16px; }
+    .cat-meta { font-size: 11px; color: #ef4444; font-weight: 700; text-transform: uppercase; opacity: 0.7; }
+    
+    .col-desc { font-size: 13px; color: #64748b; padding-right: 20px; line-height: 1.4; font-weight: 500; }
+    .col-amount { text-align: right; font-size: 22px; font-weight: 800; color: #ef4444; }
+
     .btn-action { background: #111827; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: all 0.2s; border: none; cursor: pointer; }
     .btn-action:hover { background: #1e293b; transform: translateY(-2px); }
-    
-    .btn-action.disabled {
-        background: #e2e8f0;
-        color: #94a3b8;
-        cursor: not-allowed;
-        box-shadow: none;
-        pointer-events: none;
-    }
-
+    .btn-action.disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; box-shadow: none; pointer-events: none; }
     .btn-back { background: #f1f5f9; color: #64748b; padding: 12px 20px; border-radius: 14px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.2s; }
     .btn-back:hover { background: #e2e8f0; color: #1e293b; }
 </style>
 
-<!-- HEADER SECTION -->
 <div class="ledger-header">
     <div>
-        <h1 style="margin: 0; font-size: 28px; color: #0f172a;">💸 Society Expenses</h1>
-        <p style="color: #64748b; margin-top: 5px;">Tracking society outflow and operation costs.</p>
+        <h1 style="margin: 0; font-size: 28px; color: #0f172a;">💸 Expense Ledger</h1>
+        <p style="color: #64748b; margin-top: 5px;">Detailed tracking of society expenditures and maintenance costs.</p>
         
         {% if session.user.role == 'super_admin' %}
         <div class="filter-pill">
@@ -72,20 +65,18 @@
             </select>
         </div>
         {% endif %}
-    </div> 
+    </div>
 
-<!-- BUTTONS AREA (Restricted by Role) -->
     <div style="display: flex; gap: 12px; align-items: center;">
-        
         {% if session.user.role == 'super_admin' %}
             <a href="javascript:history.back()" class="btn-back">← Back</a>
         {% endif %}
         
         {% if session.user.role == 'super_admin' %}
             {% if selected_soc %}
-                <a href="{{ url_for('income.add_income', society_id=selected_soc) }}" class="btn-action">+ Record Income</a>
+                <a href="{{ url_for('expenses.add_expense', society_id=selected_soc) }}" class="btn-action">+ Record Expense</a>
             {% else %}
-                <button class="btn-action disabled" title="Please select a society first">+ Record Income</button>
+                <button class="btn-action disabled" title="Please select a society first">+ Record Expense</button>
             {% endif %}
         {% else %}
             <a href="{{ url_for('expenses.add_expense') }}" class="btn-action">+ Record Expense</a>
@@ -93,7 +84,6 @@
     </div>
 </div>
 
-<!-- DATA FEED LABELS -->
 <div class="ledger-labels">
     <div>Date</div>
     <div>Category</div>
@@ -104,35 +94,20 @@
 <div class="ledger-feed">
     {% if records %}
         {% for r in records %}
-        <div class="expense-card">
-            <!-- 1. Date -->
+        <div class="transaction-card">
             <div class="col-date">{{ r.expense_date }}</div>
-            
-            <!-- 2. Category Info -->
-            <div class="col-main">
-                <div class="category-title">
-                    <span>🧾</span> {{ r.category }}
-                </div>
-                <div class="expense-badge">Operational</div>
+            <div class="col-category">
+                <span class="cat-name">{{ r.category }}</span>
+                <span class="cat-meta">Operational Expense</span>
             </div>
-
-            <!-- 3. Description -->
-            <div class="col-desc">
-                {{ r.description if r.description else '—' }}
-            </div>
-
-            <!-- 4. Amount -->
-            <div class="col-amount">
-                - ₹{{ "{:,.2f}".format(r.amount) }}
-            </div>
+            <div class="col-desc">{{ r.description }}</div>
+            <div class="col-amount">- ₹{{ "{:,.2f}".format(r.amount) }}</div>
         </div>
         {% endfor %}
     {% else %}
-        <!-- Empty State -->
-        <div style="background: white; border-radius: 24px; padding: 80px; text-align: center; border: 2px dashed #e2e8f0;">
-            <span style="font-size: 50px; display: block; margin-bottom: 20px;">📤</span>
+        <div style="background: white; border-radius: 24px; padding: 80px; text-align: center; border: 2px dashed #e2e8f0; margin-top: 20px;">
             <h3 style="color: #64748b;">No Expenses Recorded</h3>
-            <p style="color: #94a3b8;">Select a society or record a new expense to see data.</p>
+            <p style="color: #94a3b8;">Select a society or record a transaction to view data.</p>
         </div>
     {% endif %}
 </div>

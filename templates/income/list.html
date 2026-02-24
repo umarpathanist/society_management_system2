@@ -3,14 +3,14 @@
 
 {% block content %}
 <style>
-    /* 1. Header & Filter Layout */
+    /* 1. Header & Layout */
     .ledger-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
     .filter-pill { background: #fff; padding: 10px 24px; border-radius: 50px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-top: 20px; width: fit-content; }
     
-    /* 2. Grid & Feed Styling */
+    /* 2. Grid Styling (Updated to 4 Columns) */
     .ledger-labels {
         display: grid;
-        grid-template-columns: 120px 1.5fr 2fr 150px 150px;
+        grid-template-columns: 120px 2fr 2.5fr 150px;
         padding: 0 35px 15px;
         color: #94a3b8;
         font-size: 11px;
@@ -26,7 +26,7 @@
         border-radius: 20px;
         padding: 25px 35px;
         display: grid;
-        grid-template-columns: 120px 1.5fr 2fr 150px 150px;
+        grid-template-columns: 120px 2fr 2.5fr 150px;
         align-items: center;
         border: 1px solid #f1f5f9;
         transition: all 0.3s ease;
@@ -36,13 +36,14 @@
 
     /* 3. Column Content Styling */
     .col-date { font-size: 14px; color: #94a3b8; font-weight: 600; }
-    .cat-name { font-weight: 700; color: #1e293b; font-size: 16px; display: block; }
-    .cat-badge { font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; margin-top: 5px; display: inline-block; }
-    .badge-maint { background: #e0f2fe; color: #0369a1; }
-    .badge-other { background: #f1f5f9; color: #475569; }
-    .col-desc { font-size: 13px; color: #64748b; padding-right: 20px; line-height: 1.4; }
-    .col-period { font-size: 13px; color: #475569; font-weight: 600; }
-    .col-amount { text-align: right; font-size: 20px; font-weight: 800; color: #10b981; }
+    
+    .col-category { display: flex; flex-direction: column; gap: 2px; }
+    .cat-name { font-weight: 700; color: #1e293b; font-size: 16px; }
+    /* NEW: Period styling below Category name */
+    .cat-period { font-size: 12px; color: #6366f1; font-weight: 600; opacity: 0.8; }
+    
+    .col-desc { font-size: 13px; color: #64748b; padding-right: 20px; line-height: 1.4; font-weight: 500; }
+    .col-amount { text-align: right; font-size: 22px; font-weight: 800; color: #10b981; }
 
     /* 4. Buttons */
     .btn-action { background: #4e46e5; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2); transition: all 0.2s; border: none; cursor: pointer; }
@@ -52,7 +53,6 @@
     .btn-back:hover { background: #e2e8f0; color: #1e293b; }
 </style>
 
-<!-- HEADER SECTION -->
 <div class="ledger-header">
     <div>
         <h1 style="margin: 0; font-size: 28px; color: #0f172a;">💰 Income Ledger</h1>
@@ -72,9 +72,7 @@
         {% endif %}
     </div>
 
-    <!-- BUTTONS AREA (Restricted by Role) -->
     <div style="display: flex; gap: 12px; align-items: center;">
-        
         {% if session.user.role == 'super_admin' %}
             <a href="javascript:history.back()" class="btn-back">← Back</a>
         {% endif %}
@@ -91,12 +89,10 @@
     </div>
 </div>
 
-<!-- DATA FEED LABELS -->
 <div class="ledger-labels">
     <div>Date</div>
-    <div>Category</div>
+    <div>Category & Cycle</div>
     <div>Description</div>
-    <div>Period</div>
     <div style="text-align: right;">Credit Amount</div>
 </div>
 
@@ -105,20 +101,20 @@
         {% for r in records %}
         <div class="transaction-card">
             <div class="col-date">{{ r.tr_date }}</div>
-            <div>
+            
+            <!-- Category Column with Period nested below -->
+            <div class="col-category">
                 <span class="cat-name">{{ r.category }}</span>
-                <span class="cat-badge {% if r.category == 'Maintenance' %}badge-maint{% else %}badge-other{% endif %}">
-                    {{ r.category }}
-                </span>
+                <span class="cat-period">📅 {{ r.period if r.period and r.period != 'None None' else 'Misc. Entry' }}</span>
             </div>
+
             <div class="col-desc">{{ r.description }}</div>
-            <div class="col-period">{{ r.period }}</div>
+
             <div class="col-amount">+ ₹{{ "{:,.2f}".format(r.amount) }}</div>
         </div>
         {% endfor %}
     {% else %}
         <div style="background: white; border-radius: 24px; padding: 80px; text-align: center; border: 2px dashed #e2e8f0; margin-top: 20px;">
-            <span style="font-size: 50px; display: block; margin-bottom: 20px;">📋</span>
             <h3 style="color: #64748b;">No Records Available</h3>
             <p style="color: #94a3b8;">Select a society or record a transaction to view data.</p>
         </div>
