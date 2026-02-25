@@ -394,16 +394,52 @@ def get_next_unpaid(flat_id):
     })
 
 
+# @treasurers_bp.route("/get-next-unpaid/<int:flat_id>")
+# @login_required
+# def get_next_unpaid(flat_id):
+#     """
+#     Standardized API endpoint. 
+#     Logic is now fully handled in Repository for accuracy.
+#     """
+#     # Simply fetch the pre-calculated next period from the repository
+#     result = MaintenanceRepository.get_next_unpaid_month(flat_id)
+    
+#     # Return as JSON (e.g., {"month": "November", "year": 2025})
+#     return jsonify(result)
 
 # ---------------------------------------------------------
 # 4. MAINTENANCE COLLECTION (ADVANCE PAYMENT)
 # ---------------------------------------------------------
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from utils.decorators import login_required, role_required
+from treasurers.service import TreasurerService
+from societies.repository import SocietyRepository
+from blocks.repository import BlockRepository
+from maintenance.repository import MaintenanceRepository
+
+# Month mappings for date calculations
+MONTH_MAP = {m: i for i, m in enumerate(["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], 1)}
+REV_MONTH_MAP = {v: k for k, v in MONTH_MAP.items()}
+
 @treasurers_bp.route("/collect-maintenance", methods=["GET", "POST"])
 @login_required
 @role_required("treasurer", "admin", "super_admin")
 def collect_maintenance():
-    society_id = session.get("society_id")
+    """
+    Handles maintenance collection.
+    FIXED: Fetches societies for Super Admin dropdown on GET request.
+    """
+    user = session.get("user")
+    role = user.get("role", "").lower() # Get role safely
     
+    # 1. Determine target society (Super Admin uses URL filter, others use session)
+    selected_soc_id = request.args.get("society_id") if role == "super_admin" else session.get("society_id")
+
+    # ---------------------------------------------------------
+    # POST LOGIC: Same as before...
+    # ---------------------------------------------------------
     if request.method == "POST":
         flat_id = request.form.get("flat_id")
         amount = request.form.get("amount")
@@ -413,37 +449,57 @@ def collect_maintenance():
         e_year = request.form.get("end_year")
 
         if not all([flat_id, s_month, s_year, e_month, e_year]):
-            flash("Missing period data. Please wait for history to load.", "danger")
-            return redirect(url_for("treasurers.collect_maintenance"))
+            flash("Data missing. Please select a flat and let history load.", "warning")
+            return redirect(url_for("treasurers.collect_maintenance", society_id=selected_soc_id))
 
         try:
             start_dt = datetime(int(s_year), MONTH_MAP[s_month], 1)
             end_dt = datetime(int(e_year), MONTH_MAP[e_month], 1)
-
             curr = start_dt
             count = 0
             while curr <= end_dt:
                 m_name = REV_MONTH_MAP[curr.month]
                 y_num = curr.year
-                
-                # If bill doesn't exist, create it as paid
-                bill = MaintenanceRepository.get_bill_status(flat_id, m_name, y_num)
+                bill = MaintenanceRepository.get_by_flat_id_month_year(flat_id, m_name, y_num)
                 if not bill:
                     MaintenanceRepository.bulk_create_maintenance([flat_id], float(amount), m_name, y_num, curr.strftime('%Y-%m-10'))
-                
                 MaintenanceRepository.mark_as_paid_manually(flat_id, m_name, y_num)
                 curr += relativedelta(months=1)
                 count += 1
-
             flash(f"Advance payment for {count} months successful! ✅", "success")
             return redirect(url_for("dashboard.index"))
         except Exception as e:
-            flash(f"Payment Failed: {str(e)}", "danger")
-            return redirect(url_for("treasurers.collect_maintenance"))
+            flash(f"Error: {str(e)}", "danger")
+            return redirect(url_for("treasurers.collect_maintenance", society_id=selected_soc_id))
 
-    from blocks.repository import BlockRepository
-    blocks = BlockRepository.get_by_society(society_id)
-    return render_template("treasurers/collect_maintenance.html", blocks=blocks)
+    # ---------------------------------------------------------
+    # GET LOGIC: Fetch data to fill dropdowns
+    # ---------------------------------------------------------
+    
+    # FETCH SOCIETIES: Only for Super Admin
+    societies_data = []
+    if role == "super_admin":
+        from societies.repository import SocietyRepository
+        societies_data = SocietyRepository.get_all()
+        # DEBUG: Look at your VS Code terminal to see if this prints
+        print(f"DEBUG: Found {len(societies_data)} societies for the dropdown.")
+
+    # FETCH BLOCKS: Filtered by the selected society
+    blocks_data = []
+    if selected_soc_id:
+        from blocks.repository import BlockRepository
+        blocks_data = BlockRepository.get_by_society(selected_soc_id)
+        print(f"DEBUG: Found {len(blocks_data)} blocks for society ID {selected_soc_id}.")
+
+    return render_template(
+        "treasurers/collect_maintenance.html", 
+        societies=societies_data, # Variable for the dropdown
+        blocks=blocks_data,       # Variable for the blocks list
+        selected_soc=int(selected_soc_id) if selected_soc_id else None,
+        role=role
+    )
+
+
 
 # ---------------------------------------------------------
 # 5. GENERATE MAINTENANCE

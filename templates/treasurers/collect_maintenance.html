@@ -7,10 +7,27 @@
     <p style="color: #64748b;">Record current or <strong>advance</strong> payments for residents.</p>
 </div>
 
-<div class="card" style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 20px auto; border: 1px solid #f1f5f9;">
+<div class="card" style="background: white; border-radius: 24px; padding: 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 20px auto; border: 1px solid #f1f5f9;">
     <form method="POST">
         
-        <!-- 1. PROPERTY SELECTION -->
+        <!-- 1. SOCIETY SELECTION (VISIBLE TO SUPER ADMIN ONLY) -->
+        {% if session.user.role == 'super_admin' %}
+        <div style="margin-bottom: 30px; padding-bottom: 25px; border-bottom: 2px solid #f8fafc;">
+            <label style="display: block; margin-bottom: 10px; font-weight: 800; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
+                Select Society
+            </label>
+            <select onchange="window.location.href='?society_id=' + this.value" 
+                    style="width: 100%; padding: 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-weight: 600; outline: none; background: #fcfdfe; color: #4e46e5; cursor: pointer;">
+                <option value="">-- Choose Society --</option>
+                {% for s in societies %}
+                    <option value="{{ s.id }}" {% if s.id == selected_soc %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">* Select a society to load its blocks and flats.</p>
+        </div>
+        {% endif %}
+
+        <!-- 2. PROPERTY SELECTION -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px;">
             <div>
                 <label style="display:block; margin-bottom:10px; font-weight:700; font-size:13px; color: #475569;">SELECT BLOCK</label>
@@ -29,23 +46,22 @@
             </div>
         </div>
 
-        <!-- 2. DYNAMIC STATUS BOX (Hidden until flat selected) -->
+        <!-- 3. DYNAMIC STATUS BOX -->
         <div style="background: #eef2ff; padding: 20px; border-radius: 16px; margin-bottom: 30px; display: none; border: 1px solid #bae6fd;" id="status_box">
             <p style="margin: 0; color: #0369a1; font-size: 14px; font-weight: 700;">
                 📅 Payment Starts From: <span id="starting_period_text">Please wait...</span>
             </p>
-            <!-- Hidden inputs to send start dates to the server -->
             <input type="hidden" name="start_month" id="hidden_start_month">
             <input type="hidden" name="start_year" id="hidden_start_year">
         </div>
 
-        <!-- 3. AMOUNT -->
+        <!-- 4. AMOUNT -->
         <div style="margin-bottom: 35px;">
             <label style="display:block; margin-bottom:10px; font-weight:700; font-size:13px; color: #475569;">MONTHLY AMOUNT (₹)</label>
             <input type="number" name="amount" required value="1500" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; outline: none; font-size: 15px;">
         </div>
 
-        <!-- 4. ADVANCE DURATION -->
+        <!-- 5. ADVANCE DURATION -->
         <div style="border-top: 2px solid #f1f5f9; padding-top: 30px;">
             <h3 style="font-size: 14px; color: #1e293b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; font-weight: 800;">Advance Payment Until</h3>
             
@@ -59,10 +75,10 @@
             </div>
         </div>
 
-        <!-- 5. ACTIONS -->
+        <!-- 6. ACTIONS -->
         <div style="margin-top: 40px; display: flex; gap: 15px; align-items: center;">
             <button type="submit" id="submit_btn" disabled 
-                    style="flex: 2; background: #94a3b8; color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 700; cursor: not-allowed; font-size: 16px; transition: all 0.3s ease;">
+                    style="flex: 2; background: #94a3b8; color: white; border: none; padding: 18px; border-radius: 14px; font-weight: 700; cursor: not-allowed; font-size: 16px; transition: all 0.3s ease;">
                 Select a Flat to Continue
             </button>
             <a href="{{ url_for('dashboard.index') }}" style="flex: 1; text-align: center; color: #64748b; text-decoration: none; font-weight: 600; font-size: 15px;">
@@ -78,24 +94,19 @@ const flatSelect = document.getElementById('flat_selector');
 const statusBox = document.getElementById('status_box');
 const startText = document.getElementById('starting_period_text');
 const submitBtn = document.getElementById('submit_btn');
-
-// Advance period inputs
 const endMonthSelect = document.querySelector('select[name="end_month"]');
 const endYearInput = document.querySelector('input[name="end_year"]');
 
 const monthsList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
 let startMonthIndex = 0;
 let startYear = 0;
 
-// 1. Load flats based on block
 blockSelect.addEventListener('change', function() {
     flatSelect.disabled = true;
     statusBox.style.display = 'none';
     submitBtn.disabled = true;
     submitBtn.innerText = "Select a Flat to Continue";
     submitBtn.style.background = "#94a3b8";
-
     if (!this.value) return;
 
     fetch(`/treasurers/get-occupied-flats/${this.value}`)
@@ -109,14 +120,8 @@ blockSelect.addEventListener('change', function() {
         });
 });
 
-// 2. Fetch start period and restrict Advance selector
 flatSelect.addEventListener('change', function() {
-    if(!this.value) { 
-        statusBox.style.display = 'none'; 
-        submitBtn.disabled = true;
-        return; 
-    }
-
+    if(!this.value) { statusBox.style.display = 'none'; submitBtn.disabled = true; return; }
     statusBox.style.display = 'block';
     startText.innerText = "Checking records...";
 
@@ -124,24 +129,14 @@ flatSelect.addEventListener('change', function() {
         .then(res => res.json())
         .then(data => {
             if(data.month) {
-                // Store start values
                 startMonthIndex = monthsList.indexOf(data.month);
                 startYear = parseInt(data.year);
-
-                // Update UI text and hidden inputs
                 startText.innerText = `${data.month} ${data.year}`;
                 document.getElementById('hidden_start_month').value = data.month;
                 document.getElementById('hidden_start_year').value = data.year;
-                
-                // AUTO-SYNC Advance fields to the start date
                 endYearInput.value = startYear;
-                endYearInput.min = startYear;
                 endMonthSelect.value = data.month;
-
-                // Run restriction logic
                 updateMonthRestrictions();
-
-                // Enable button
                 submitBtn.disabled = false;
                 submitBtn.innerText = "🚀 Process Payment";
                 submitBtn.style.background = "#4e46e5";
@@ -153,33 +148,21 @@ flatSelect.addEventListener('change', function() {
         });
 });
 
-// 3. Dynamic month/year restriction logic
 function updateMonthRestrictions() {
     const selectedYear = parseInt(endYearInput.value);
-
-    // If selected year is the SAME as the start year, disable previous months
     if (selectedYear === startYear) {
         Array.from(endMonthSelect.options).forEach((option, index) => {
-            if (index < startMonthIndex) {
-                option.disabled = true;
-            } else {
-                option.disabled = false;
-            }
+            option.disabled = index < startMonthIndex;
         });
-        
-        // If user was on a restricted month, jump them to the start month
         if (monthsList.indexOf(endMonthSelect.value) < startMonthIndex) {
             endMonthSelect.value = monthsList[startMonthIndex];
         }
     } else {
-        // If year is in future, all months are allowed
         Array.from(endMonthSelect.options).forEach(option => option.disabled = false);
     }
 }
 
-// Attach listeners to the Advance fields
 endYearInput.addEventListener('change', updateMonthRestrictions);
 endMonthSelect.addEventListener('change', updateMonthRestrictions);
-
 </script>
 {% endblock %}
