@@ -562,14 +562,21 @@ class FlatRepository:
             cur.close()
             conn.close()
 
+    # flats/repository.py
+
     @staticmethod
     def get_occupied_by_society(society_id):
-        """Used for automated billing."""
+        """
+        Fetches IDs of flats that are currently marked as occupied.
+        Prevents billing vacant units.
+        """
         conn = get_db_connection()
+        from psycopg2.extras import RealDictCursor
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             cur.execute("""
-                SELECT f.id FROM flats f
+                SELECT f.id 
+                FROM flats f
                 JOIN blocks b ON f.block_id = b.id
                 WHERE b.society_id = %s AND f.is_occupied = TRUE
             """, (society_id,))

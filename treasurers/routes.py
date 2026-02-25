@@ -454,7 +454,8 @@ def collect_maintenance():
 def generate_maintenance():
     """
     Handles manual billing and reminders.
-    FIXED: Fetches societies for the dropdown when Super Admin is logged in.
+    REDIRECTIONS: Fixed to stay on the same page.
+    FILTER: Bills are generated ONLY for currently occupied units.
     """
     user = session.get("user")
     role = user.get("role").lower()
@@ -464,13 +465,10 @@ def generate_maintenance():
         action = request.form.get("action")
         
         # Determine target society based on role and form input
-        if role == "super_admin":
-            target_society_id = request.form.get("society_id")
-        else:
-            target_society_id = session_soc_id
+        target_society_id = request.form.get("society_id") if role == "super_admin" else session_soc_id
 
         if not target_society_id:
-            flash("Please select a society.", "warning")
+            flash("Please select a target society first.", "warning")
             return redirect(url_for("treasurers.generate_maintenance"))
 
         from database.connection import get_db_connection
@@ -482,7 +480,7 @@ def generate_maintenance():
 
         try:
             # ---------------------------------------------------------
-            # ACTION 1: MANUAL BILL GENERATION
+            # ACTION 1: MANUAL BILL GENERATION (OCCUPIED ONLY)
             # ---------------------------------------------------------
             if action == "generate":
                 amount = request.form.get("amount")
@@ -493,15 +491,19 @@ def generate_maintenance():
                 if not all([amount, month, year, due_date]):
                     flash("Missing billing details. Please fill all fields.", "danger")
                 else:
-                    flats = FlatRepository.get_all_by_society(target_society_id)
-                    if not flats:
-                        flash("No flats found in the selected society to bill.", "warning")
+                    # FETCH ONLY OCCUPIED FLATS FROM DB
+                    occupied_flats = FlatRepository.get_occupied_by_society(target_society_id)
+                    
+                    if not occupied_flats:
+                        flash("No occupied flats found in the selected society. Vacant units were not billed.", "warning")
                     else:
-                        flat_ids = [f['id'] for f in flats]
+                        flat_ids = [f['id'] for f in occupied_flats]
+                        
+                        # Bulk create records in Maintenance table
                         MaintenanceRepository.bulk_create_maintenance(
                             flat_ids, float(amount), month, int(year), due_date
                         )
-                        flash(f"Success! Bills generated for {len(flat_ids)} units. ✅", "success")
+                        flash(f"Success! Bills generated for {len(flat_ids)} occupied units. Vacant units skipped. ✅", "success")
 
             # ---------------------------------------------------------
             # ACTION 2: INSTANT EMAIL REMINDERS
@@ -526,13 +528,15 @@ def generate_maintenance():
                             member['email'], member['full_name'], 
                             member['amount'], member['month'], member['year']
                         )
-                    flash(f"Success: {len(unpaid_members)} reminders sent! 📩", "info")
+                    flash(f"Email Campaign: {len(unpaid_members)} reminders dispatched! 📩", "info")
                 else:
-                    flash("Everyone is up to date! ✨", "success")
+                    flash("Everyone is up to date! No reminders needed. ✨", "success")
 
+            # STAY ON THE SAME PAGE AFTER POST
             return redirect(url_for("treasurers.generate_maintenance"))
 
         except Exception as e:
+            print(f"CRITICAL ERROR: {e}")
             flash(f"System Error: {str(e)}", "danger")
             if conn: conn.rollback()
             return redirect(url_for("treasurers.generate_maintenance"))
@@ -540,16 +544,15 @@ def generate_maintenance():
             cur.close()
             conn.close()
 
-    # --- GET REQUEST LOGIC (This was the missing part) ---
+    # --- GET REQUEST: LOAD SOCIETIES FOR SUPER ADMIN ---
     societies_list = []
     if role == "super_admin":
-        # We must import and fetch all societies for the dropdown
         from societies.repository import SocietyRepository
         societies_list = SocietyRepository.get_all()
 
     return render_template(
         "treasurers/generate_maintenance.html", 
-        societies=societies_list # Passing data to HTML
+        societies=societies_list 
     )
 
 # ---------------------------------------------------------
