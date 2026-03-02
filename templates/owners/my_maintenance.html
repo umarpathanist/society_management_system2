@@ -1,69 +1,124 @@
 {% extends "layout/base.html" %}
-{% block title %}My Maintenance{% endblock %}
+{% block title %}My Maintenance Bills{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>💰 My Maintenance Bills</h1>
-    <p style="color: #6b7280;">Viewing all bills for your assigned properties.</p>
+<!-- 1. Load Razorpay SDK (CRITICAL: Must be at the top) -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<div class="page-header" style="margin-bottom: 30px;">
+    <h1 style="font-size: 26px; color: #1e293b; display: flex; align-items: center; gap: 12px;">
+        <span>💰</span> My Maintenance Bills
+    </h1>
+    <p style="color: #64748b; margin-top: 5px;">Viewing all bills for your assigned properties.</p>
 </div>
 
-<div class="card" style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 20px;">
+<div class="card" style="background: white; border-radius: 16px; padding: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;">
     <table style="width: 100%; border-collapse: collapse;">
         <thead>
-            <tr style="text-align: left; border-bottom: 2px solid #f3f4f6; color: #6b7280; font-size: 13px; text-transform: uppercase;">
+            <tr style="text-align: left; border-bottom: 2px solid #f3f4f6; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;">
                 <th style="padding: 15px;">Flat</th>
                 <th style="padding: 15px;">Period</th>
                 <th style="padding: 15px;">Amount</th>
-                <th style="padding: 15px;">Due Date</th>
                 <th style="padding: 15px;">Status</th>
-                
+                <th style="padding: 15px;">Action</th>
             </tr>
         </thead>
         <tbody>
             {% if maintenance %}
                 {% for bill in maintenance %}
-                <tr style="border-bottom: 1px solid #f3f4f6;">
-                    <!-- 1. Flat Number -->
-                    <td style="padding: 15px;">
-                        <strong style="color: #4e46e5;">{{ bill.flat_display }}</strong>
-                    </td>
-                    
-                    <!-- 2. Month/Year -->
-                    <td style="padding: 15px; font-weight: 500;">
-                        {{ bill.month }} {{ bill.year }}
-                    </td>
-                    
-                    <!-- 3. Amount -->
-                    <td style="padding: 15px; font-weight: 600;">
-                        ₹{{ "{:,.2f}".format(bill.amount) }}
-                    </td>
-                    
-                    <!-- 4. Due Date -->
-                    <td style="padding: 15px; color: #6b7280;">
-                        {{ bill.due_date }}
-                    </td>
-                    
-                    <!-- 5. Status Badge -->
+                <tr style="border-bottom: 1px solid #f8fafc;">
+                    <td style="padding: 15px;"><strong style="color: #4e46e5;">{{ bill.flat_display }}</strong></td>
+                    <td style="padding: 15px; color: #1e293b; font-weight: 500;">{{ bill.month }} {{ bill.year }}</td>
+                    <td style="padding: 15px; font-weight: 700; color: #111827;">₹{{ "{:,.2f}".format(bill.amount) }}</td>
                     <td style="padding: 15px;">
                         {% if bill.status == 'paid' %}
-                            <span style="background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">Paid</span>
+                            <span style="background: #ecfdf5; color: #059669; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid #d1fae5;">Paid</span>
                         {% else %}
-                            <span style="background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">Unpaid</span>
+                            <span style="background: #fff1f2; color: #e11d48; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid #fee2e2;">Unpaid</span>
                         {% endif %}
                     </td>
-
-                    
+                    <td style="padding: 15px;">
+                        {% if bill.status == 'unpaid' %}
+                            <!-- THE BUTTON: Now with pointer cursor and confirmed onclick -->
+                            <button type="button" 
+                                    onclick="initiatePayment({{ bill.id }})" 
+                                    style="background: #4e46e5; color: white; border: none; padding: 10px 22px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 13px; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25); transition: 0.2s;">
+                                Pay Now
+                            </button>
+                        {% else %}
+                            <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">✅ Receipt Ready</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             {% else %}
-                <!-- Empty State -->
-                <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">
-                        No maintenance bills found for your assigned flats.
-                    </td>
-                </tr>
+                <tr><td colspan="5" style="text-align: center; padding: 60px; color: #94a3b8;">No bills found.</td></tr>
             {% endif %}
         </tbody>
     </table>
 </div>
+
+<!-- 2. PAYMENT SCRIPT (Cleaned and Debugged) -->
+<script>
+function initiatePayment(billId) {
+    console.log("Starting payment for Bill ID:", billId);
+    
+    // Step 1: Create Order
+    fetch(`/owners/create-payment-order/${billId}`, { 
+        method: 'POST' 
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Order creation failed");
+        return data;
+    })
+    .then(orderData => {
+        // Step 2: Configure Razorpay Options
+        var options = {
+            "key": orderData.key,
+            "amount": orderData.amount,
+            "currency": "INR",
+            "name": "SocietyHQ Management",
+            "description": "Maintenance Billing",
+            "order_id": orderData.id,
+            "handler": function (response) {
+                // Step 3: Send details back for verification
+                verifyPayment(billId, response);
+            },
+            "prefill": {
+                "name": orderData.full_name,
+                "email": orderData.email
+            },
+            "theme": { "color": "#4e46e5" }
+        };
+        var rzp = new Razorpay(options);
+        rzp.open();
+    })
+    .catch(error => {
+        console.error("Payment Error:", error);
+        alert("Payment Error: " + error.message);
+    });
+}
+
+function verifyPayment(billId, rzpResponse) {
+    fetch('/owners/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            bill_id: billId,
+            razorpay_order_id: rzpResponse.razorpay_order_id,
+            razorpay_payment_id: rzpResponse.razorpay_payment_id,
+            razorpay_signature: rzpResponse.razorpay_signature
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success' || data.status === 'ok') {
+            window.location.reload();
+        } else {
+            alert("Verification Failed. Please check with your treasurer.");
+        }
+    });
+}
+</script>
 {% endblock %}

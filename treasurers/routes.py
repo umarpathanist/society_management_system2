@@ -289,8 +289,9 @@
 
 import calendar
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, current_app, render_template, request, redirect, url_for, flash, session, jsonify
 from dateutil.relativedelta import relativedelta
+from extensions import get_razorpay_client
 from utils.decorators import login_required, role_required
 
 # Repositories
@@ -360,53 +361,28 @@ def get_occupied_flats(block_id):
     return jsonify({"flats": occupied})
 
 # treasurers/routes.py
+# treasurers/routes.py
 
 @treasurers_bp.route("/get-next-unpaid/<int:flat_id>")
 @login_required
 def get_next_unpaid(flat_id):
-    """AJAX endpoint to determine the starting period for collection."""
-    res = MaintenanceRepository.get_next_unpaid_month(flat_id)
+    """
+    Standardized API endpoint. 
+    FIXED: Now calling the correct method name 'get_next_unpaid_bill'
+    """
+    # Use 'get_next_unpaid_bill' NOT 'get_next_unpaid_month'
+    bill = MaintenanceRepository.get_next_unpaid_bill(flat_id)
     
-    if res:
-        # If the result found was a 'paid' record, increment to the next month
-        if res.get('type') == 'all_paid':
-            m_num = MONTH_MAP.get(res['month'])
-            y_num = int(res['year'])
-            
-            # Simple month-increment logic
-            if m_num == 12: # December -> January next year
-                next_month = "January"
-                next_year = y_num + 1
-            else:
-                next_month = REV_MONTH_MAP[m_num + 1]
-                next_year = y_num
-                
-            return jsonify({"month": next_month, "year": next_year})
-        
-        # If it was an 'unpaid' debt, return as is
-        return jsonify({"month": res['month'], "year": res['year']})
+    if bill:
+        return jsonify({
+            "id": bill['id'],
+            "month": bill['month'],
+            "year": bill['year'],
+            "amount": float(bill['amount'])
+        })
     
-    # Fallback for flats with ZERO history: Start from current month
-    now = datetime.now()
-    return jsonify({
-        "month": now.strftime("%B"), 
-        "year": now.year
-    })
-
-
-# @treasurers_bp.route("/get-next-unpaid/<int:flat_id>")
-# @login_required
-# def get_next_unpaid(flat_id):
-#     """
-#     Standardized API endpoint. 
-#     Logic is now fully handled in Repository for accuracy.
-#     """
-#     # Simply fetch the pre-calculated next period from the repository
-#     result = MaintenanceRepository.get_next_unpaid_month(flat_id)
-    
-#     # Return as JSON (e.g., {"month": "November", "year": 2025})
-#     return jsonify(result)
-
+    # If no bill is found, return 404
+    return jsonify({"error": "No unpaid bills"}), 404
 # ---------------------------------------------------------
 # 4. MAINTENANCE COLLECTION (ADVANCE PAYMENT)
 # ---------------------------------------------------------
@@ -650,3 +626,101 @@ def edit(id): # <--- Function name MUST be 'edit'
 
     societies = SocietyRepository.get_all()
     return render_template("treasurers/edit.html", treasurer=treasurer, societies=societies)
+
+# treasurers/routes.py
+
+@treasurers_bp.route("/collect-payment", methods=["POST"])
+@login_required
+def collect_payment():
+    data = request.get_json()
+    flat_id = data.get("flat_id")
+    mode = data.get("mode") 
+    total = float(data.get("total_amount", 0))
+    start_date = data.get("start_date")
+    end_date = data.get("end_date")
+
+    if mode == "cash":
+        try:
+            # We assume a monthly rate for the advance calculation
+            # If paying for 1 month, rate = total. If 2 months, rate = total/2.
+            # For simplicity, we use the value from the monthly_rate input
+            rate = float(data.get("monthly_rate") or 1500)
+
+            MaintenanceRepository.process_advance_payment(
+                flat_id, start_date, end_date, rate, 'Cash'
+            )
+            
+            flash(f"Payment of ₹{total:,.2f} recorded for Flat {data.get('flat_num')}! ✅", "success")
+            return jsonify({"status": "success"})
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    elif mode == "online":
+        try:
+            client = get_razorpay_client()
+            order = client.order.create(data={
+                "amount": int(total * 100), 
+                "currency": "INR",
+                "receipt": f"adv_{flat_id}_{int(datetime.now().timestamp())}"
+            })
+            # Add logic here to save order ID to DB if needed
+            return jsonify({
+                "status": "order_created",
+                "id": order['id'],
+                "amount": order['amount'],
+                "key": current_app.config['RAZORPAY_KEY_ID'],
+                "full_name": session['user']['full_name'],
+                "email": session['user']['email']
+            })
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"Gateway Error: {str(e)}"}), 500
+    
+
+@treasurers_bp.route("/collect-payment", methods=["POST"])
+@login_required
+@role_required("treasurer", "super_admin")
+def collect_payment_action():
+    data = request.get_json()
+    flat_id = data.get("flat_id")
+    mode = data.get("mode") # 'cash' or 'online'
+    total_amount = float(data.get("total_amount", 0))
+    
+    # Range details
+    start_date_str = data.get("start_date") # YYYY-MM-01
+    end_date_str = data.get("end_date")     # YYYY-MM-01
+
+    if mode == "cash":
+        try:
+            # 1. Update/Insert records in DB via Repository
+            MaintenanceRepository.process_advance_payment(
+                flat_id, start_date_str, end_date_str, total_amount, 'Cash'
+            )
+            # 2. SET FLASH MESSAGE (It will appear after JS reloads the page)
+            flash(f"Cash payment of ₹{total_amount:,.2f} recorded successfully for Flat {data.get('flat_num')}! ✅", "success")
+            return jsonify({"status": "success"})
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    elif mode == "online":
+        try:
+            # Create Razorpay Order
+            client = get_razorpay_client()
+            order = client.order.create(data={
+                "amount": int(total_amount * 100), # Paise
+                "currency": "INR",
+                "receipt": f"adv_{flat_id}_{int(datetime.now().timestamp())}"
+            })
+            
+            # Save Order ID for verification later
+            MaintenanceRepository.save_order_id_for_range(flat_id, start_date_str, end_date_str, order['id'])
+            
+            return jsonify({
+                "status": "order_created",
+                "id": order['id'],
+                "amount": order['amount'],
+                "key": current_app.config['RAZORPAY_KEY_ID'],
+                "full_name": session['user']['full_name'],
+                "email": session['user']['email']
+            })
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"Gateway Error: {str(e)}"}), 500

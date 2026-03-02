@@ -18,6 +18,11 @@ class Config:
     MAIL_PASSWORD = 'hiamihhtqusafkry'
     MAIL_DEFAULT_SENDER = 'umarpathanist@gmail.com'    
 
+
+    RAZORPAY_KEY_ID=os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_RHmKLA3jf1WkPe')
+    RAZORPAY_KEY_SECRET=os.environ.get('RAZORPAY_KEY_SECRET', 'DIYXpaetUTEu0oQkHVU56WOL')
+    
+
 # MAIL_SERVER=smtp.gmail.com
 # MAIL_PORT=587
 # MAIL_USE_TLS=true

@@ -1,118 +1,148 @@
 {% extends "layout/base.html" %}
-{% block title %}Maintenance Collection{% endblock %}
+{% block title %}Maintenance Collection Hub{% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom: 35px;">
-    <h1>🧾 Maintenance Collection</h1>
-    <p style="color: #64748b;">Record current or <strong>advance</strong> payments for residents.</p>
+<!-- Official Razorpay SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<div class="page-header" style="margin-bottom: 35px; display: flex; justify-content: space-between; align-items: flex-start;">
+    <div>
+        <h1 style="font-size: 26px; color: #1e293b; display: flex; align-items: center; gap: 12px; margin: 0;">
+            <span>🧾</span> Maintenance Collection Hub
+        </h1>
+        <p style="color: #64748b; margin-top: 5px;">Record single or <strong>advance payments</strong> for society residents.</p>
+    </div>
+    <a href="{{ url_for('dashboard.index') }}" style="text-decoration: none; color: #64748b; font-weight: 600; font-size: 14px; padding: 10px 15px; background: #f1f5f9; border-radius: 10px;">← Back to Home</a>
 </div>
 
-<div class="card" style="background: white; border-radius: 24px; padding: 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 20px auto; border: 1px solid #f1f5f9;">
-    <form method="POST">
-        
-        <!-- 1. SOCIETY SELECTION (VISIBLE TO SUPER ADMIN ONLY) -->
-        {% if session.user.role == 'super_admin' %}
-        <div style="margin-bottom: 30px; padding-bottom: 25px; border-bottom: 2px solid #f8fafc;">
-            <label style="display: block; margin-bottom: 10px; font-weight: 800; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
-                Select Society
+
+
+
+<div class="card" style="background: white; border-radius: 24px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); max-width: 850px; margin: 20px auto; border: 1px solid #f1f5f9;">
+    
+    <!-- STEP 1: PROPERTY SELECTION -->
+    <!-- STEP 1-3: PROPERTY SELECTION (With Super Admin Logic) -->
+<div style="padding-bottom: 30px; border-bottom: 2px dashed #f1f5f9;">
+    
+    <!-- Super Admin gets a Society Picker -->
+    {% if role == 'super_admin' %}
+    <div style="margin-bottom: 25px;">
+        <label style="display:block; margin-bottom:10px; font-weight:700; font-size:12px; color: #94a3b8; text-transform: uppercase;">1. Select Society</label>
+        <select onchange="if(this.value) window.location.href='/treasurers/collect-maintenance?society_id=' + this.value" 
+                style="width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; background:white; font-weight: 600; cursor: pointer;">
+            <option value="">-- Choose Society --</option>
+            {% for s in societies %}
+                <option value="{{ s.id }}" {% if s.id == selected_soc %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+        <div>
+            <label style="display:block; margin-bottom:10px; font-weight:700; font-size:12px; color: #94a3b8; text-transform: uppercase;">
+                {{ "2." if role == 'super_admin' else "1." }} Select Block
             </label>
-            <select onchange="window.location.href='?society_id=' + this.value" 
-                    style="width: 100%; padding: 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-weight: 600; outline: none; background: #fcfdfe; color: #4e46e5; cursor: pointer;">
-                <option value="">-- Choose Society --</option>
-                {% for s in societies %}
-                    <option value="{{ s.id }}" {% if s.id == selected_soc %}selected{% endif %}>{{ s.name }}</option>
+            <select id="block_picker" {% if not selected_soc and role == 'super_admin' %}disabled{% endif %}
+                    style="width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; background:white; font-weight: 600; outline: none; cursor: pointer;">
+                <option value="">-- Choose Building --</option>
+                {% for b in blocks %}
+                    <option value="{{ b.id }}">{{ b.name }}</option>
                 {% endfor %}
             </select>
-            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">* Select a society to load its blocks and flats.</p>
         </div>
-        {% endif %}
-
-        <!-- 2. PROPERTY SELECTION -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px;">
-            <div>
-                <label style="display:block; margin-bottom:10px; font-weight:700; font-size:13px; color: #475569;">SELECT BLOCK</label>
-                <select id="block_selector" required style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; background:white; cursor: pointer; outline: none;">
-                    <option value="">-- Choose Block --</option>
-                    {% for b in blocks %}
-                        <option value="{{ b.id }}">{{ b.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label style="display:block; margin-bottom:10px; font-weight:700; font-size:13px; color: #475569;">SELECT FLAT</label>
-                <select name="flat_id" id="flat_selector" required disabled style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; background:#f8fafc; cursor: pointer; outline: none;">
-                    <option value="">-- Select Block First --</option>
-                </select>
-            </div>
+        <div>
+            <label style="display:block; margin-bottom:10px; font-weight:700; font-size:12px; color: #94a3b8; text-transform: uppercase;">
+                {{ "3." if role == 'super_admin' else "2." }} Select Flat
+            </label>
+            <select id="flat_picker" disabled 
+                    style="width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; background:#f8fafc; font-weight: 600; outline: none; cursor: pointer;">
+                <option value="">-- Pick a flat --</option>
+            </select>
         </div>
+    </div>
+</div>
 
-        <!-- 3. DYNAMIC STATUS BOX -->
-        <div style="background: #eef2ff; padding: 20px; border-radius: 16px; margin-bottom: 30px; display: none; border: 1px solid #bae6fd;" id="status_box">
-            <p style="margin: 0; color: #0369a1; font-size: 14px; font-weight: 700;">
-                📅 Payment Starts From: <span id="starting_period_text">Please wait...</span>
+<!-- Rest of your #billing_section and JavaScript remains the same -->
+    <!-- STEP 2: DYNAMIC STATUS & BILLING INFO (Hidden until flat selected) -->
+    <div id="billing_section" style="display: none;">
+        
+        <div id="status_box" style="background: #eff6ff; padding: 20px; border-radius: 16px; margin-bottom: 30px; border: 1px solid #bfdbfe; text-align: center;">
+            <p style="margin: 0; color: #1e40af; font-size: 15px; font-weight: 700;">
+                📅 Payment Starts From: <span id="starting_period_text" style="color: #4338ca;">...</span>
             </p>
-            <input type="hidden" name="start_month" id="hidden_start_month">
-            <input type="hidden" name="start_year" id="hidden_start_year">
         </div>
 
-        <!-- 4. AMOUNT -->
-        <div style="margin-bottom: 35px;">
-            <label style="display:block; margin-bottom:10px; font-weight:700; font-size:13px; color: #475569;">MONTHLY AMOUNT (₹)</label>
-            <input type="number" name="amount" required value="1500" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; outline: none; font-size: 15px;">
-        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px; margin-bottom: 40px;">
+            <!-- Left: Monthly Rate -->
+            <div>
+                <label style="display:block; margin-bottom:10px; font-weight:700; font-size:12px; color: #475569; text-transform: uppercase;">Monthly Charge (₹)</label>
+                <input type="number" id="monthly_rate" value="1500" oninput="calculateTotal()"
+                       style="width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size: 18px; font-weight: 700; color: #1e293b;">
+            </div>
 
-        <!-- 5. ADVANCE DURATION -->
-        <div style="border-top: 2px solid #f1f5f9; padding-top: 30px;">
-            <h3 style="font-size: 14px; color: #1e293b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; font-weight: 800;">Advance Payment Until</h3>
-            
-            <div style="display: flex; gap: 15px; align-items: center; background: #f8fafc; padding: 20px; border-radius: 12px;">
-                <select name="end_month" required style="flex: 2; padding:12px; border-radius:10px; border:1.5px solid #e2e8f0; background: white; outline: none;">
-                    {% for m in ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] %}
-                        <option value="{{ m }}">{{ m }}</option>
-                    {% endfor %}
-                </select>
-                <input type="number" name="end_year" value="2026" required style="flex: 1; padding:12px; border-radius:10px; border:1.5px solid #e2e8f0; outline: none;">
+            <!-- Right: Pay Until -->
+            <div>
+                <label style="display:block; margin-bottom:10px; font-weight:700; font-size:12px; color: #475569; text-transform: uppercase;">Pay Advance Until</label>
+                <div style="display: flex; gap: 10px;">
+                    <select id="end_month" onchange="calculateTotal()" style="flex: 2; padding:12px; border:1.5px solid #e2e8f0; border-radius:12px; background: white; font-weight: 600; cursor: pointer;">
+                        {% for m in ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] %}
+                            <option value="{{ loop.index }}">{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" id="end_year" onchange="calculateTotal()" value="2026" 
+                           style="flex: 1; padding:12px; border:1.5px solid #e2e8f0; border-radius:12px; font-weight: 600;">
+                </div>
             </div>
         </div>
 
-        <!-- 6. ACTIONS -->
-        <div style="margin-top: 40px; display: flex; gap: 15px; align-items: center;">
-            <button type="submit" id="submit_btn" disabled 
-                    style="flex: 2; background: #94a3b8; color: white; border: none; padding: 18px; border-radius: 14px; font-weight: 700; cursor: not-allowed; font-size: 16px; transition: all 0.3s ease;">
-                Select a Flat to Continue
-            </button>
-            <a href="{{ url_for('dashboard.index') }}" style="flex: 1; text-align: center; color: #64748b; text-decoration: none; font-weight: 600; font-size: 15px;">
-                Cancel
-            </a>
+        <!-- STEP 3: DYNAMIC SUMMARY & PAYMENT -->
+        <div id="summary_card" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 35px; border-radius: 20px; text-align: center; border: 1px solid #e2e8f0;">
+            <p id="calculation_detail" style="color: #64748b; font-size: 14px; margin-bottom: 8px; font-weight: 500;">Calculating total...</p>
+            <h2 id="grand_total" style="font-size: 42px; font-weight: 900; color: #1e293b; margin: 0; letter-spacing: -1.5px;">₹0.00</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 35px;">
+                <button onclick="processFinalPayment('cash')" 
+                        style="background: #10b981; color: white; border: none; padding: 18px; border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: 0.2s;">
+                    💵 Record Cash
+                </button>
+                <button onclick="processFinalPayment('online')" 
+                        style="background: #4e46e5; color: white; border: none; padding: 18px; border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2); transition: 0.2s;">
+                    💳 Pay via Razorpay
+                </button>
+            </div>
         </div>
-    </form>
+    </div>
+
+    <!-- INITIAL EMPTY STATE -->
+    <div id="empty_state" style="text-align: center; padding: 60px 0; color: #94a3b8;">
+        <span style="font-size: 40px; display: block; margin-bottom: 15px;">🔍</span>
+        <p style="font-size: 16px; font-weight: 500;">Please select a Block and Flat to begin collection.</p>
+    </div>
 </div>
 
 <script>
-const blockSelect = document.getElementById('block_selector');
-const flatSelect = document.getElementById('flat_selector');
-const statusBox = document.getElementById('status_box');
-const startText = document.getElementById('starting_period_text');
-const submitBtn = document.getElementById('submit_btn');
-const endMonthSelect = document.querySelector('select[name="end_month"]');
-const endYearInput = document.querySelector('input[name="end_year"]');
+// --- GLOBAL STATE ---
+let startM = 0;           // Starting Month Index (1-12)
+let startY = 0;           // Starting Year
+let currentBillId = null; // ID of the oldest unpaid bill
+let monthlyRate = 0;      // Default rate from DB
+const monthsArray = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-const monthsList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-let startMonthIndex = 0;
-let startYear = 0;
-
-blockSelect.addEventListener('change', function() {
+// 1. DYNAMIC BLOCK -> FLAT DROPDOWN
+// When block changes, fetch and show only occupied flats
+document.getElementById('block_picker').addEventListener('change', function() {
+    const flatSelect = document.getElementById('flat_picker');
     flatSelect.disabled = true;
-    statusBox.style.display = 'none';
-    submitBtn.disabled = true;
-    submitBtn.innerText = "Select a Flat to Continue";
-    submitBtn.style.background = "#94a3b8";
+    document.getElementById('billing_section').style.display = 'none';
+    document.getElementById('empty_state').style.display = 'block';
+
     if (!this.value) return;
 
     fetch(`/treasurers/get-occupied-flats/${this.value}`)
         .then(res => res.json())
         .then(data => {
-            flatSelect.innerHTML = '<option value="">-- Select Flat --</option>';
+            flatSelect.innerHTML = '<option value="">-- Pick Flat --</option>';
             data.flats.forEach(f => {
                 flatSelect.innerHTML += `<option value="${f.id}">${f.flat_number}</option>`;
             });
@@ -120,49 +150,140 @@ blockSelect.addEventListener('change', function() {
         });
 });
 
-flatSelect.addEventListener('change', function() {
-    if(!this.value) { statusBox.style.display = 'none'; submitBtn.disabled = true; return; }
-    statusBox.style.display = 'block';
-    startText.innerText = "Checking records...";
+// 2. FLAT PICKER -> FETCH OLDEST UNPAID DATA
+// This identifies the starting point for billing
+document.getElementById('flat_picker').addEventListener('change', function() {
+    if (!this.value) return;
+    
+    document.getElementById('empty_state').style.display = 'none';
+    const startLabel = document.getElementById('starting_period_text');
+    startLabel.innerText = "🔍 Syncing records...";
 
     fetch(`/treasurers/get-next-unpaid/${this.value}`)
-        .then(res => res.json())
+        .then(async res => {
+            if (res.status === 404) {
+                alert("This account is already fully paid up! ✅");
+                window.location.reload();
+                return;
+            }
+            return res.json();
+        })
         .then(data => {
-            if(data.month) {
-                startMonthIndex = monthsList.indexOf(data.month);
-                startYear = parseInt(data.year);
-                startText.innerText = `${data.month} ${data.year}`;
-                document.getElementById('hidden_start_month').value = data.month;
-                document.getElementById('hidden_start_year').value = data.year;
-                endYearInput.value = startYear;
-                endMonthSelect.value = data.month;
-                updateMonthRestrictions();
-                submitBtn.disabled = false;
-                submitBtn.innerText = "🚀 Process Payment";
-                submitBtn.style.background = "#4e46e5";
-                submitBtn.style.cursor = "pointer";
-            } else {
-                startText.innerText = "Account already paid in full.";
-                submitBtn.disabled = true;
+            if (data && data.id) {
+                // Set global state from DB
+                currentBillId = data.id;
+                startM = monthsArray.indexOf(data.month) + 1;
+                startY = parseInt(data.year);
+                monthlyRate = parseFloat(data.amount);
+                
+                // Update UI
+                startLabel.innerText = `${data.month} ${data.year}`;
+                document.getElementById('monthly_rate').value = monthlyRate;
+                document.getElementById('end_month').value = startM;
+                document.getElementById('end_year').value = startY;
+                
+                document.getElementById('billing_section').style.display = 'block';
+                calculateTotal(); // Initial calc
             }
         });
 });
 
-function updateMonthRestrictions() {
-    const selectedYear = parseInt(endYearInput.value);
-    if (selectedYear === startYear) {
-        Array.from(endMonthSelect.options).forEach((option, index) => {
-            option.disabled = index < startMonthIndex;
-        });
-        if (monthsList.indexOf(endMonthSelect.value) < startMonthIndex) {
-            endMonthSelect.value = monthsList[startMonthIndex];
-        }
+// 3. AUTO-CALCULATION LOGIC
+// Updates total price whenever Month, Year, or Monthly Charge is changed
+function calculateTotal() {
+    const rateInput = document.getElementById('monthly_rate').value;
+    const rate = parseFloat(rateInput) || 0;
+    const endM = parseInt(document.getElementById('end_month').value);
+    const endY = parseInt(document.getElementById('end_year').value);
+
+    // Math: Difference between selected date and starting date
+    const totalMonths = (endY - startY) * 12 + (endM - startM) + 1;
+
+    const displayPrice = document.getElementById('grand_total');
+    const displayText = document.getElementById('calculation_detail');
+
+    if (totalMonths <= 0) {
+        displayPrice.innerText = "₹0.00";
+        displayPrice.style.color = "#ef4444";
+        displayText.innerText = "⚠️ Error: Selected 'Until' date is before the start period.";
     } else {
-        Array.from(endMonthSelect.options).forEach(option => option.disabled = false);
+        const totalAmount = totalMonths * rate;
+        displayPrice.innerText = `₹${totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        displayPrice.style.color = "#1e293b";
+        displayText.innerText = `Total for ${totalMonths} months (${monthsArray[startM-1]} ${startY} to ${monthsArray[endM-1]} ${endY})`;
     }
 }
 
-endYearInput.addEventListener('change', updateMonthRestrictions);
-endMonthSelect.addEventListener('change', updateMonthRestrictions);
+// 4. DISPATCH PAYMENT (CASH OR RAZORPAY)
+function processFinalPayment(mode) {
+    const flatElement = document.getElementById('flat_picker');
+    const flatId = flatElement.value;
+    const flatNum = flatElement.options[flatElement.selectedIndex].text;
+
+    // Build standard date strings for the backend Range logic
+    const startDateStr = `${startY}-${String(startM).padStart(2, '0')}-01`;
+    const endMonthVal = document.getElementById('end_month').value;
+    const endYearVal = document.getElementById('end_year').value;
+    const endDateStr = `${endYearVal}-${String(endMonthVal).padStart(2, '0')}-01`;
+
+    const payload = {
+        flat_id: flatId,
+        flat_num: flatNum,
+        mode: mode,
+        start_date: startDateStr,
+        end_date: endDateStr,
+        total_amount: (document.getElementById('grand_total').innerText).replace(/[₹,]/g, '')
+    };
+
+    fetch('/treasurers/collect-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // CRITICAL: Reloading refreshes the DB connection and shows the Flash Message
+            window.location.reload(); 
+        } 
+        else if (data.status === 'order_created') {
+            // Trigger Razorpay Modal with data from Python Route
+            var options = {
+                "key": data.key,
+                "amount": data.amount,
+                "currency": "INR",
+                "name": "SocietyHQ Management",
+                "description": `Maintenance Payment - ${flatNum}`,
+                "order_id": data.id,
+                "handler": function (response) {
+                    verifyOnline(currentBillId, response);
+                },
+                "prefill": { "name": data.full_name, "email": data.email },
+                "theme": { "color": "#4e46e5" }
+            };
+            var rzp = new Razorpay(options);
+            rzp.open();
+        } else {
+            alert("Error: " + (data.message || "Failed to process payment. Check terminal."));
+        }
+    })
+    .catch(err => console.error("Fetch error:", err));
+}
+
+// 5. RAZORPAY SIGNATURE VERIFICATION
+function verifyOnline(billId, rzpResponse) {
+    fetch('/owners/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            bill_id: billId,
+            razorpay_order_id: rzpResponse.razorpay_order_id,
+            razorpay_payment_id: rzpResponse.razorpay_payment_id,
+            razorpay_signature: rzpResponse.razorpay_signature
+        })
+    }).then(() => {
+        window.location.reload(); // Refresh to update "Next Unpaid"
+    });
+}
 </script>
 {% endblock %}

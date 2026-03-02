@@ -1,48 +1,84 @@
-# from database.connection import get_db_connection
-# from psycopg2.extras import RealDictCursor
-
-# class IncomeRepository:
-#     @staticmethod
-#     def add(data):
-#         conn = get_db_connection()
-#         cur = conn.cursor()
-#         try:
-#             cur.execute("""
-#                 INSERT INTO other_income (society_id, source_name, amount, income_date, description)
-#                 VALUES (%s, %s, %s, %s, %s)
-#             """, (
-#                 data['society_id'], 
-#                 data['source_name'], 
-#                 data['amount'], 
-#                 data['income_date'], 
-#                 data['description']
-#             ))
-#             conn.commit()
-#         finally:
-#             cur.close()
-#             conn.close()
-
-#     @staticmethod
-#     def get_by_society(society_id):
-#         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
-#         try:
-#             cur.execute("SELECT * FROM other_income WHERE society_id = %s ORDER BY income_date DESC", (society_id,))
-#             return cur.fetchall()
-#         finally:
-#             cur.close()
-#             conn.close()
-
-
-
-
-
-# income/repository.py
 from database.connection import get_db_connection
 from psycopg2.extras import RealDictCursor
 
 class IncomeRepository:
-    # Method for adding miscellaneous income stays the same...
+
+    # ======================================================
+    # 1. ADD MISC INCOME (Donations, etc.)
+    # ======================================================
+    @staticmethod
+    def add(data):
+        """Inserts a record into the other_income table."""
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                INSERT INTO other_income (society_id, source_name, amount, income_date, description)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                data['society_id'], 
+                data['source_name'], 
+                data['amount'], 
+                data['income_date'], 
+                data['description']
+            ))
+            conn.commit()
+            return True
+        finally:
+            cur.close()
+            conn.close()
+
+    # ======================================================
+    # 2. FETCH UNIFIED LEDGER (FIXES THE ERROR)
+    # ======================================================
+    # income/repository.py
+
+    @staticmethod
+    def get_combined_ledger(society_id):
+        """
+        FETCHES A UNIFIED LEDGER:
+        - Removes Block Name from details.
+        - Includes Month/Year in the period field.
+        """
+        if not society_id: return []
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            cur.execute("""
+                -- Part A: Get Miscellaneous Income
+                (SELECT 
+                    income_date as tr_date, 
+                    source_name as category, 
+                    'Direct Entry' as period,
+                    COALESCE(description, 'General Receipt') as description, 
+                    amount
+                FROM other_income 
+                WHERE society_id = %s)
+
+                UNION ALL
+
+                -- Part B: Get Paid Maintenance
+                (SELECT 
+                    m.paid_date as tr_date, 
+                    'Maintenance' as category,
+                    CONCAT(m.month, ' ', m.year) as period, -- Month Year for the badge
+                    CONCAT('Flat ', f.flat_number) as description, -- REMOVED Block info here
+                    m.amount
+                FROM maintenance m
+                JOIN flats f ON m.flat_id = f.id
+                JOIN blocks b ON f.block_id = b.id
+                WHERE b.society_id = %s AND m.status = 'paid' AND m.paid_date IS NOT NULL)
+
+                ORDER BY tr_date DESC
+            """, (society_id, society_id))
+            
+            return cur.fetchall()
+        finally:
+            cur.close()
+            conn.close()
+
+            
     @staticmethod
     def add(data):
         conn = get_db_connection()
@@ -54,133 +90,4 @@ class IncomeRepository:
             """, (data['society_id'], data['source_name'], data['amount'], data['income_date'], data['description']))
             conn.commit()
         finally:
-            cur.close()
-            conn.close()
-
-    # @staticmethod
-    # def get_by_society(society_id):
-    #     """
-    #     FETCHES COMBINED INCOME:
-    #     1. Miscellaneous Income (Other Income table)
-    #     2. Maintenance Payments (Maintenance table where status is paid)
-    #     """
-    #     conn = get_db_connection()
-    #     cur = conn.cursor(cursor_factory=RealDictCursor)
-    #     try:
-    #         cur.execute("""
-    #             -- Part A: Get Misc Income
-    #             SELECT 
-    #                 source_name as source, 
-    #                 amount, 
-    #                 income_date as date, 
-    #                 COALESCE(description, '-') as info,
-    #                 'Misc' as type
-    #             FROM other_income 
-    #             WHERE society_id = %s
-
-    #             UNION ALL
-
-    #             -- Part B: Get Maintenance Payments
-    #             SELECT 
-    #                 'Maintenance: ' || f.flat_number as source, 
-    #                 m.amount, 
-    #                 m.due_date as date, -- Use due_date or created_at
-    #                 m.month || ' ' || m.year as info,
-    #                 'Maint' as type
-    #             FROM maintenance m
-    #             JOIN flats f ON m.flat_id = f.id
-    #             JOIN blocks b ON f.block_id = b.id
-    #             WHERE b.society_id = %s AND m.status = 'paid'
-
-    #             ORDER BY date DESC
-    #         """, (society_id, society_id))
-    #         return cur.fetchall()
-    #     finally:
-    #         cur.close()
-    #         conn.close()
-            
-    # income/repository.py
-
-    @staticmethod
-    def get_by_society(society_id):
-        """
-        Fetches combined income. 
-        Fixed: Separates Flat Identity from the Billing Month/Year.
-        """
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        try:
-            cur.execute("""
-                -- 1. Get Other Income (Donations/Parking)
-                SELECT 
-                    income_date as date, 
-                    source_name as source, 
-                    description as period, 
-                    amount, 
-                    'Other' as type
-                FROM other_income 
-                WHERE society_id = %s
-                
-                UNION ALL
-                
-                -- 2. Get Paid Maintenance
-                SELECT 
-                    m.created_at::date as date, 
-                    ('Flat ' || f.flat_number) as source, 
-                    (m.month || ' ' || m.year) as period, 
-                    m.amount, 
-                    'Maintenance' as type
-                FROM maintenance m
-                JOIN flats f ON m.flat_id = f.id
-                JOIN blocks b ON f.block_id = b.id
-                WHERE b.society_id = %s AND m.status = 'paid'
-                
-                ORDER BY date DESC
-            """, (society_id, society_id))
-            return cur.fetchall()
-        finally:
-            cur.close()
-            conn.close()
-        
-    # income/repository.py
-
-    @staticmethod
-    def get_combined_ledger(society_id):
-        """
-        Fetches both Maintenance payments and Other Income.
-        Standardizes column names to prevent 'UndefinedError'.
-        """
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        try:
-            cur.execute("""
-                -- 1. Get Paid Maintenance
-                SELECT 
-                    m.created_at::date as tr_date, 
-                    'Maintenance' as category, 
-                    'Flat ' || f.flat_number || ' (' || b.name || ')' as description, 
-                    m.month || ' ' || m.year as period, 
-                    m.amount
-                FROM maintenance m
-                JOIN flats f ON m.flat_id = f.id
-                JOIN blocks b ON f.block_id = b.id
-                WHERE b.society_id = %s AND m.status = 'paid'
-
-                UNION ALL
-
-                -- 2. Get Other Income
-                SELECT 
-                    income_date as tr_date, 
-                    source_name as category, 
-                    COALESCE(description, 'No notes') as description, 
-                    'N/A' as period, 
-                    amount
-                FROM other_income
-                WHERE society_id = %s
-                
-                ORDER BY tr_date DESC
-            """, (society_id, society_id))
-            return cur.fetchall()
-        finally:
-            cur.close()
-            conn.close()
+            cur.close(); conn.close()
