@@ -315,10 +315,18 @@ def my_maintenance():
 # ---------------------------------------------------------
 # 3. RAZORPAY PAYMENT LOGIC
 # ---------------------------------------------------------
-@owners_bp.route("/create-order/<int:bill_id>", methods=["POST"])
+import razorpay
+from flask import Blueprint, request, jsonify, session, current_app
+from maintenance.repository import MaintenanceRepository
+from utils.pdf_helper import generate_pdf_blob
+from utils.mail import send_email_with_pdf
+from datetime import datetime
+
+# --- 1. CREATE RAZORPAY ORDER ---
+@owners_bp.route("/create-payment-order/<int:bill_id>", methods=["POST"])
 @login_required
-def create_order(bill_id):
-    bill = MaintenanceRepository.get_bill_by_id(bill_id)
+def create_payment_order(bill_id):
+    bill = MaintenanceRepository.get_full_invoice_data(bill_id)
     if not bill:
         return jsonify({"status": "error", "message": "Bill not found"}), 404
 
@@ -327,13 +335,16 @@ def create_order(bill_id):
             current_app.config['RAZORPAY_KEY_ID'], 
             current_app.config['RAZORPAY_KEY_SECRET']
         ))
+        
         amount_paise = int(float(bill['amount']) * 100)
         
+        # Create Razorpay Order
         order = client.order.create(data={
             "amount": amount_paise, "currency": "INR",
-            "receipt": f"bill_{bill_id}", "payment_capture": 1
+            "receipt": f"bill_{bill_id}"
         })
         
+        # Save order ID in DB for verification
         MaintenanceRepository.save_order_id(bill_id, order['id'])
         
         return jsonify({
@@ -347,6 +358,7 @@ def create_order(bill_id):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# --- 2. VERIFY PAYMENT SIGNATURE ---
 @owners_bp.route("/verify-payment", methods=["POST"])
 @login_required
 def verify_payment():
@@ -356,16 +368,30 @@ def verify_payment():
             current_app.config['RAZORPAY_KEY_ID'], 
             current_app.config['RAZORPAY_KEY_SECRET']
         ))
+        
+        # Verify Razorpay Signature
         client.utility.verify_payment_signature({
             'razorpay_order_id': data['razorpay_order_id'],
             'razorpay_payment_id': data['razorpay_payment_id'],
             'razorpay_signature': data['razorpay_signature']
         })
-        MaintenanceRepository.complete_payment(data['bill_id'], data['razorpay_payment_id'], data['razorpay_signature'])
-        return jsonify({"status": "success"})
-    except Exception:
-        return jsonify({"status": "error", "message": "Verification failed"}), 400
 
+        # Update DB and trigger PDF/Email
+        bill_id = data['bill_id']
+        MaintenanceRepository.mark_as_paid(bill_id, method='Razorpay Online', p_id=data['razorpay_payment_id'])
+        
+        # Generate and Email Invoice (Milestone C)
+        invoice_data = MaintenanceRepository.get_full_invoice_data(bill_id)
+        context = {"society": {"name": invoice_data['society_name'], "address": invoice_data['society_address']},
+                   "user": {"full_name": invoice_data['owner_name']}, "flat": {"flat_number": invoice_data['flat_number']},
+                   "maintenance": invoice_data, "date_today": datetime.now().strftime('%B %d, %Y')}
+        
+        pdf = generate_pdf_blob('maintenance/invoice_template.html', context)
+        send_email_with_pdf(invoice_data['owner_email'], invoice_data['owner_name'], pdf, f"Receipt_{bill_id}.pdf", invoice_data)
+
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
 
 # ---------------------------------------------------------
 # 4. CRUD: ADD, EDIT, DELETE
@@ -414,11 +440,107 @@ def delete_owner(id):
     flash("User removed successfully.", "success")
     return redirect(url_for("owners.list_owners"))
 
-@owners_bp.route("/pay/<int:maintenance_id>", methods=["POST"])
+import secrets
+from datetime import datetime
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from utils.decorators import login_required, role_required
+
+# Repositories & Services
+from maintenance.repository import MaintenanceRepository
+from notifications.repository import NotificationRepository
+from treasurers.repository import TreasurerRepository
+from utils.mail import send_email_with_pdf # Ensure this matches your mail file name
+from utils.pdf_helper import generate_pdf_blob # Ensure this matches your PDF util
+
+@owners_bp.route("/pay-simulation/<int:maintenance_id>", methods=["POST"])
 @login_required
 @role_required("owner", "tenant")
 def pay_bill(maintenance_id):
-    # Standard manual simulation for owners
-    MaintenanceRepository.mark_as_paid(maintenance_id, method='Online')
-    flash("Payment recorded successfully!", "success")
+    """
+    Consolidated Payment Flow:
+    1. Mark bill as Paid in DB.
+    2. Notify Resident (Success).
+    3. Notify Society Treasurer (New Collection).
+    4. Generate & Email PDF Receipt.
+    """
+    try:
+        # Step 1: Update Database with dummy transaction ID
+        dummy_p_id = f"PAY_{secrets.token_hex(4).upper()}"
+        MaintenanceRepository.mark_as_paid(
+            maintenance_id, 
+            method='Online Transfer', 
+            p_id=dummy_p_id
+        )
+
+        # Step 2: Fetch all data needed for Notifications and the Invoice
+        invoice_data = MaintenanceRepository.get_full_invoice_data(maintenance_id)
+
+        if not invoice_data:
+            flash("Payment recorded, but system could not retrieve billing details.", "warning")
+            return redirect(url_for("owners.my_maintenance"))
+
+        # --- STEP 3: NOTIFICATION SYSTEM ---
+        
+        # A. Notify the RESIDENT (The person who just paid)
+        NotificationRepository.create(
+            user_id=session["user"]["id"],
+            title="Payment Successful ✅",
+            message=f"Maintenance for {invoice_data['month']} {invoice_data['year']} is cleared. Receipt generated.",
+            notif_type="payment"
+        )
+
+        # B. Notify the TREASURER (To alert them of the new collection)
+        # We find the treasurer assigned specifically to this society
+        treasurer = TreasurerRepository.get_treasurer_by_society(invoice_data['society_id'])
+        
+        if treasurer:
+            NotificationRepository.create(
+                user_id=treasurer['id'], # Pushes to Treasurer's account
+                title="New Payment Alert 💰",
+                message=f"Resident {invoice_data['owner_name']} has paid ₹{invoice_data['amount']} for Flat {invoice_data['flat_number']}.",
+                notif_type="payment"
+            )
+
+        # --- STEP 4: PDF & EMAIL RECEIPT ---
+
+        # Prepare context for the HTML template
+        context = {
+            "society": {
+                "name": invoice_data['society_name'], 
+                "address": invoice_data['society_address']
+            },
+            "user": {
+                "full_name": invoice_data['owner_name'], 
+                "email": invoice_data['owner_email']
+            },
+            "flat": {
+                "flat_number": invoice_data['flat_number'], 
+                "block_name": invoice_data['block_name']
+            },
+            "maintenance": invoice_data,
+            "date_today": datetime.now().strftime('%B %d, %Y')
+        }
+
+        # Generate the PDF blob
+        pdf_blob = generate_pdf_blob('maintenance/invoice_template.html', context)
+
+        if pdf_blob:
+            filename = f"Receipt_{invoice_data['flat_number']}_{invoice_data['month']}.pdf"
+            
+            # Send Email with PDF attachment
+            send_email_with_pdf(
+                recipient_email=invoice_data['owner_email'],
+                recipient_name=invoice_data['owner_name'],
+                pdf_data=pdf_blob,
+                filename=filename,
+                maintenance=invoice_data
+            )
+            flash(f"Payment successful! Professional receipt has been emailed. ✅", "success")
+        else:
+            flash("Payment recorded successfully, but receipt email generation failed.", "warning")
+
+    except Exception as e:
+        print(f"CRITICAL PAYMENT FLOW ERROR: {e}")
+        flash(f"System Error during payment: {str(e)}", "danger")
+
     return redirect(url_for("owners.my_maintenance"))

@@ -337,6 +337,7 @@ class MaintenanceRepository:
 
     @staticmethod
     def process_advance_payment(flat_id, start_date, end_date, amount, method, receiver_id=None):
+
         conn = get_db_connection(); cur = conn.cursor()
         from dateutil.relativedelta import relativedelta
         MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -354,3 +355,46 @@ class MaintenanceRepository:
                 curr += relativedelta(months=1)
             conn.commit()
         finally: cur.close(); conn.close()
+        
+# maintenance/repository.py
+
+    @staticmethod
+    def get_full_invoice_data(maintenance_id):
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            cur.execute("""
+                SELECT 
+                    -- Maintenance Details
+                    m.id,                -- CHANGED: Removed 'as maintenance_id'
+                    m.amount,
+                    m.month,
+                    m.year,
+                    m.status,
+                    m.due_date,
+                    m.paid_date,
+                    
+                    -- Flat & Block Details
+                    f.flat_number,
+                    b.name as block_name,
+                    
+                    -- Society Details
+                    s.name as society_name,
+                    s.address as society_address,
+                    
+                    -- User (Owner/Payer) Details
+                    COALESCE(u.full_name, 'Resident') as owner_name, -- Added fallback for 'None'
+                    u.email as owner_email
+                    
+                FROM maintenance m
+                JOIN flats f ON m.flat_id = f.id
+                JOIN blocks b ON f.block_id = b.id
+                JOIN societies s ON b.society_id = s.id
+                LEFT JOIN users u ON f.owner_id = u.id
+                WHERE m.id = %s
+            """, (maintenance_id,))
+            
+            return cur.fetchone()
+        finally:
+            cur.close()
+            conn.close()

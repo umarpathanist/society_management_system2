@@ -94,7 +94,7 @@
 
 import os
 from dotenv import load_dotenv
-from flask import Flask, redirect, url_for
+from flask import Flask, app, redirect, session, url_for
 from flask_apscheduler import APScheduler
 
 # 1. Import Configuration and Extensions
@@ -114,6 +114,8 @@ from treasurers.routes import treasurers_bp
 from income.routes import income_bp
 from expenses.routes import expenses_bp
 from reports.routes import reports_bp
+from notifications.routes import notifications_bp
+
 
 # 3. Import Context Processors & Automation
 from utils.context import load_sidebar_blocks, inject_current_user
@@ -144,6 +146,25 @@ def create_app():
         # We pass 'app' to allow mailing in background
         auto_generate_maintenance(app)
 
+
+    # Inside app.py -> create_app()
+
+    # Inside your create_app() function in app.py
+
+    @app.context_processor
+    def inject_notifications():
+        """Makes unread count available on EVERY page immediately."""
+        user = session.get("user")
+        if user:
+            try:
+                from notifications.repository import NotificationRepository
+                # Fetch count of is_read = FALSE
+                count = NotificationRepository.get_unread_count(user["id"])
+                return dict(unread_notif_count=count) # Standardized name
+            except Exception:
+                return dict(unread_notif_count=0)
+        return dict(unread_notif_count=0)
+    
     # Register All Blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -157,10 +178,11 @@ def create_app():
     app.register_blueprint(income_bp)
     app.register_blueprint(expenses_bp)
     app.register_blueprint(reports_bp)
-
+    app.register_blueprint(notifications_bp)
     # Register Context Processors
     app.context_processor(load_sidebar_blocks)
     app.context_processor(inject_current_user)
+    app.context_processor(inject_notifications)
 
     @app.route("/")
     def home():

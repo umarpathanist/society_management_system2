@@ -119,3 +119,44 @@ def send_password_reset(recipient_email, new_password):
     
     msg = Message(subject, recipients=[recipient_email], body=body)
     threading.Thread(target=send_async_email, args=(app, msg)).start()
+
+
+# mail for  maintenance invoice with pdf attachment:
+
+from flask_mail import Message
+from extensions import mail
+from flask import current_app, render_template # Add render_template
+import threading
+
+def send_email_with_pdf(recipient_email, recipient_name, pdf_data, filename, maintenance):
+    """Sends a beautiful HTML email with the PDF invoice attached."""
+    app = current_app._get_current_object()
+    
+    subject = f"✅ Payment Received: {maintenance['month']} {maintenance['year']} - SocietyHQ"
+    
+    # Milestone C: Bind data to the beautiful HTML template
+    with app.app_context():
+        html_body = render_template(
+            'emails/payment_receipt.html', 
+            name=recipient_name, 
+            m=maintenance
+        )
+    
+    msg = Message(
+        subject, 
+        recipients=[recipient_email],
+        html=html_body # Set the HTML content
+    )
+    
+    # Attach the PDF
+    msg.attach(filename, "application/pdf", pdf_data)
+    
+    threading.Thread(target=send_async_email, args=(app, msg)).start()
+
+def send_async_email(app, msg):
+    with app.app_context():
+        try:
+            mail.send(msg)
+            print(f"Professional Receipt sent to: {msg.recipients[0]}")
+        except Exception as e:
+            print(f"Mail Delivery Failed: {e}")

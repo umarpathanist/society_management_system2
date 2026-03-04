@@ -5,6 +5,7 @@
 <!-- 1. Load Razorpay SDK (CRITICAL: Must be at the top) -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
+
 <div class="page-header" style="margin-bottom: 30px;">
     <h1 style="font-size: 26px; color: #1e293b; display: flex; align-items: center; gap: 12px;">
         <span>💰</span> My Maintenance Bills
@@ -46,7 +47,12 @@
                                 Pay Now
                             </button>
                         {% else %}
-                            <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">✅ Receipt Ready</span>
+
+                            <!-- Show Download Link for Paid -->
+        <a href="{{ url_for('maintenance.download_invoice', m_id=bill.id) }}" 
+           style="background-color: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #e2e8f0;">
+            <span>📄</span> Download Invoice
+        </a>
                         {% endif %}
                     </td>
                 </tr>
@@ -59,30 +65,32 @@
 </div>
 
 <!-- 2. PAYMENT SCRIPT (Cleaned and Debugged) -->
+<!-- 2. PAYMENT SCRIPT -->
 <script>
 function initiatePayment(billId) {
     console.log("Starting payment for Bill ID:", billId);
-    
-    // Step 1: Create Order
-    fetch(`/owners/create-payment-order/${billId}`, { 
-        method: 'POST' 
+
+    // Step 1: Create Order on Server
+    fetch(`/owners/create-payment-order/${billId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
     })
     .then(async response => {
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Order creation failed");
+        if (!response.ok) throw new Error(data.message || "Order creation failed");
         return data;
     })
     .then(orderData => {
         // Step 2: Configure Razorpay Options
         var options = {
-            "key": orderData.key,
-            "amount": orderData.amount,
+            "key": orderData.key, 
+            "amount": orderData.amount, 
             "currency": "INR",
             "name": "SocietyHQ Management",
             "description": "Maintenance Billing",
-            "order_id": orderData.id,
-            "handler": function (response) {
-                // Step 3: Send details back for verification
+            "order_id": orderData.order_id,
+            "handler": function (response){
+                // Step 3: Verify Payment on Success
                 verifyPayment(billId, response);
             },
             "prefill": {
@@ -91,32 +99,32 @@ function initiatePayment(billId) {
             },
             "theme": { "color": "#4e46e5" }
         };
-        var rzp = new Razorpay(options);
-        rzp.open();
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
     })
     .catch(error => {
-        console.error("Payment Error:", error);
-        alert("Payment Error: " + error.message);
+        alert("Error: " + error.message);
     });
 }
 
-function verifyPayment(billId, rzpResponse) {
+function verifyPayment(billId, razorResponse) {
     fetch('/owners/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             bill_id: billId,
-            razorpay_order_id: rzpResponse.razorpay_order_id,
-            razorpay_payment_id: rzpResponse.razorpay_payment_id,
-            razorpay_signature: rzpResponse.razorpay_signature
+            razorpay_order_id: razorResponse.razorpay_order_id,
+            razorpay_payment_id: razorResponse.razorpay_payment_id,
+            razorpay_signature: razorResponse.razorpay_signature
         })
     })
     .then(res => res.json())
     .then(data => {
-        if (data.status === 'success' || data.status === 'ok') {
-            window.location.reload();
+        if(data.status === 'success') {
+            alert("Payment Successful! Receipt has been emailed. ✅");
+            location.reload();
         } else {
-            alert("Verification Failed. Please check with your treasurer.");
+            alert("Verification Failed: " + data.message);
         }
     });
 }

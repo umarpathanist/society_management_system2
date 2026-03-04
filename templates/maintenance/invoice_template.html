@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Helvetica, Arial, sans-serif; color: #333; }
+        .invoice-box { padding: 30px; border: 1px solid #eee; font-size: 14px; line-height: 24px; color: #555; }
+        .header { margin-bottom: 40px; border-bottom: 2px solid #4e46e5; padding-bottom: 20px; }
+        .header table { width: 100%; }
+        .title { font-size: 28px; font-weight: bold; color: #4e46e5; }
+        .info-section { margin-bottom: 40px; width: 100%; }
+        .bill-details { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .bill-details th { background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; text-align: left; }
+        .bill-details td { padding: 12px; border: 1px solid #e2e8f0; }
+        .total { margin-top: 30px; text-align: right; font-size: 18px; font-weight: 800; color: #111827; }
+        .footer { margin-top: 50px; font-size: 11px; color: #94a3b8; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="invoice-box">
+        <div class="header">
+            <table>
+                <tr>
+                    <td class="title">INVOICE</td>
+                    <td style="text-align: right;">
+                        <strong>{{ society.name }}</strong><br>
+                        {{ society.address }}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <table class="info-section">
+            <tr>
+                <td width="50%">
+                    <strong>Billed To:</strong><br>
+                    {{ user.full_name }}<br>
+                    Flat: {{ flat.flat_number }}
+                </td>
+                <td width="50%" style="text-align: right;">
+                    <strong>Invoice ID:</strong> #INV-{{ maintenance.id }}<br>
+                    <strong>Issue Date:</strong> {{ date_today }}<br>
+                    <strong>Period:</strong> {{ maintenance.month }} {{ maintenance.year }}
+                </td>
+            </tr>
+        </table>
+
+        <table class="bill-details">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Monthly Society Maintenance Fee</td>
+                    <td>{{ maintenance.status | upper }}</td>
+                    <td style="text-align: right;"> Rs {{ "{:,.2f}".format(maintenance.amount) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total">Total: Rs 
+          {{ "{:,.2f}".format(maintenance.amount) }}</div>
+
+        <div class="footer">
+            This is a computer-generated document. No signature required.<br>
+            Thank you for your prompt payment!
+        </div>
+    </div>
+</body>
+</html>

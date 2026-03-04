@@ -1,0 +1,186 @@
+{% extends "layout/base.html" %}
+{% block title %}Notification Centre{% endblock %}
+
+{% block content %}
+<style>
+    /* Unique Animations and Styles */
+    .notif-card {
+        background: white; 
+        border-radius: 20px; 
+        padding: 20px; 
+        margin-bottom: 12px; 
+        display: flex; 
+        align-items: center; 
+        gap: 20px; 
+        border: 1px solid #f1f5f9; 
+        transition: all 0.3s ease; 
+        position: relative;
+    }
+
+    .notif-card:hover {
+        border-color: #4e46e5;
+        transform: translateX(8px);
+        box-shadow: 0 10px 15px rgba(0,0,0,0.03);
+    }
+
+    .unread-border {
+        border-left: 6px solid #4e46e5 !format;
+    }
+
+    .read-border {
+        border-left: 6px solid #e2e8f0;
+        opacity: 0.8;
+    }
+
+    .pulse-dot {
+        display: inline-block; 
+        width: 8px; 
+        height: 8px; 
+        background: #ef4444; 
+        border-radius: 50%; 
+        margin-left: 8px;
+        box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+</style>
+
+<!-- PAGE HEADER -->
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 35px;">
+    <div>
+        <h1 style="margin: 0; font-size: 26px; color: #1e293b;">🔔 Notification Centre</h1>
+        <p style="color: #64748b; margin-top: 5px;">Manage your society alerts and track your account activity.</p>
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+        <!-- 1. Mark All as Read Button -->
+        {% if unread_count and unread_count > 0 %}
+        <form action="{{ url_for('notifications.read_all') }}" method="POST">
+            <button type="submit" style="background: #eef2ff; color: #4e46e5; border: 1px solid #c7d2fe; padding: 10px 18px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 13px;">
+                Mark Read
+            </button>
+        </form>
+        {% endif %}
+
+        <!-- 2. Clear All Button -->
+        {% if notifications %}
+        <form action="{{ url_for('notifications.clear_all') }}" method="POST" onsubmit="return confirm('Permanently delete all notifications?')">
+            <button type="submit" style="background: #fff1f2; color: #e11d48; border: 1px solid #fecaca; padding: 10px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13px;">
+                🗑️ Clear Inbox
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if notifications %}
+<form action="{{ url_for('notifications.bulk_delete') }}" method="POST" id="bulk-form">
+    
+    <!-- 3. BULK ACTION BAR -->
+    <div style="background: white; padding: 15px 25px; border-radius: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f1f5f9;">
+        <input type="checkbox" id="select-all" style="width: 18px; height: 18px; cursor: pointer; accent-color: #4e46e5;">
+        <label for="select-all" style="font-size: 14px; font-weight: 700; color: #475569; cursor: pointer;">Select All</label>
+        
+        <button type="submit" id="delete-selected-btn" disabled 
+                style="margin-left: auto; background: #1e293b; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: not-allowed; opacity: 0.4; transition: 0.3s;">
+            Delete Selected
+        </button>
+    </div>
+
+    <!-- 4. LIST OF CARDS -->
+    <div style="max-width: 900px;">
+        {% for n in notifications %}
+        <div class="notif-card {% if not n.is_read %}unread-border{% else %}read-border{% endif %}">
+            
+            <!-- Selection Checkbox -->
+            <input type="checkbox" name="notif_ids" value="{{ n.id }}" class="notif-checkbox" style="width: 18px; height: 18px; cursor: pointer; accent-color: #4e46e5;">
+            
+            <!-- Type-based Icon -->
+            <div style="background: #f8fafc; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; border: 1px solid #e2e8f0;">
+                {% if n.notif_type == 'payment' %} 💰
+                {% elif n.notif_type == 'due' %} 🧾
+                {% elif n.notif_type == 'system' %} 🏢
+                {% else %} 🔔 {% endif %}
+            </div>
+            
+            <!-- Content -->
+            <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <h4 style="margin: 0; font-size: 15px; color: #1e293b; font-weight: 700;">
+                        {{ n.title }}
+                        {% if not n.is_read %}
+                            <span class="pulse-dot"></span>
+                        {% endif %}
+                    </h4>
+                    <small style="color: #94a3b8; font-weight: 500;">
+                        {{ n.created_at.strftime('%d %b, %H:%M') if n.created_at else 'Just now' }}
+                    </small>
+                </div>
+                <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.5;">{{ n.message }}</p>
+            </div>
+
+            <!-- Single Delete (X) -->
+            <button type="button" onclick="deleteSingle('{{ n.id }}')" 
+                    style="background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 22px; padding: 5px;" 
+                    onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">
+                &times;
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+</form>
+
+{% else %}
+    <!-- EMPTY STATE -->
+    <div style="text-align: center; padding: 100px 20px; background: white; border-radius: 30px; border: 2px dashed #e2e8f0; margin-top: 20px;">
+        <div style="font-size: 60px; margin-bottom: 20px;">🍃</div>
+        <h3 style="color: #1e293b; margin-bottom: 10px; font-weight: 700;">No notifications</h3>
+        <p style="color: #94a3b8;">Your inbox is empty. Check back later for updates.</p>
+    </div>
+{% endif %}
+
+<!-- JAVASCRIPT FOR INTERACTIVITY -->
+<script>
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.notif-checkbox');
+    const deleteBtn = document.getElementById('delete-selected-btn');
+
+    // Handle button activation based on selection
+    function toggleDeleteBtn() {
+        const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        deleteBtn.disabled = checkedCount === 0;
+        deleteBtn.style.opacity = checkedCount > 0 ? '1' : '0.4';
+        deleteBtn.style.cursor = checkedCount > 0 ? 'pointer' : 'not-allowed';
+        deleteBtn.innerText = checkedCount > 0 ? `Delete Selected (${checkedCount})` : 'Delete Selected';
+    }
+
+    selectAll?.addEventListener('change', function() {
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        toggleDeleteBtn();
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            if (!this.checked) selectAll.checked = false;
+            if (Array.from(checkboxes).every(c => c.checked)) selectAll.checked = true;
+            toggleDeleteBtn();
+        });
+    });
+
+    // Helper for individual X button
+    function deleteSingle(id) {
+        if(confirm('Permanently delete this notification?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ url_for('notifications.delete', id=0) }}".replace('0', id);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+{% endblock %}

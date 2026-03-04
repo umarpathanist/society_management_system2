@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        .wrapper { background-color: #f8fafc; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        .main { background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .header { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 30px; text-align: center; color: white; }
+        .content { padding: 40px; color: #1e293b; line-height: 1.6; }
+        .success-icon { font-size: 48px; margin-bottom: 15px; }
+        h1 { margin: 0; font-size: 24px; font-weight: 800; }
+        .details-box { background-color: #f1f5f9; border-radius: 12px; padding: 25px; margin: 25px 0; }
+        .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+        .label { color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase; }
+        .value { color: #1e293b; font-weight: 700; text-align: right; }
+        .footer { padding: 30px; text-align: center; color: #94a3b8; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="main">
+            <div class="header">
+                <div class="success-icon">✅</div>
+                <h1>Payment Received</h1>
+                <p style="opacity: 0.9; margin-top: 5px;">Transaction Successful</p>
+            </div>
+            
+            <div class="content">
+                <p>Hello <strong>{{ name }}</strong>,</p>
+                <p>Thank you for your payment. Your maintenance dues for <strong>{{ m.month }} {{ m.year }}</strong> have been successfully recorded.</p>
+                
+                <div class="details-box">
+                    <table width="100%">
+                        <tr>
+                            <td class="label">Amount Paid</td>
+                            <td class="value">Rs. {{ "{:,.2f}".format(m.amount) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Flat Number</td>
+                            <td class="value">{{ m.flat_number }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Transaction ID</td>
+                            <td class="value">#{{ m.razorpay_payment_id or 'SIM_PAY' }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <p style="font-size: 14px; color: #64748b;">A professional PDF invoice has been attached to this email for your records.</p>
+            </div>
+
+            <div class="footer">
+                <p>&copy; 2024 SocietyHQ Management System</p>
+                <p>This is an automated receipt. Please do not reply.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

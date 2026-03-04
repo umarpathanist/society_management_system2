@@ -158,6 +158,7 @@
                     <th>Period</th>
                     <th style="text-align: right;">Amount Due</th>
                     <th style="text-align: right;">Action</th>
+                    
                 </tr>
             </thead>
             <tbody>
@@ -194,6 +195,7 @@
                     <th>Source / Category</th>
                     <th>Notes</th>
                     <th style="text-align: right;">Credit / Debit</th>
+                    <th style="padding: 15px;">Invoice</th>
                 </tr>
             </thead>
             <tbody>
@@ -211,7 +213,9 @@
                         <td style="text-align: right; font-weight: 800; font-size: 17px; color: {% if entry.type == 'IN' %}#10b981{% else %}#ef4444{% endif %};">
                             {% if entry.type == 'IN' %}+{% else %}-{% endif %} ₹{{ "{:,.2f}".format(entry.amount) }}
                         </td>
+                        <th style="padding: 15px;">Invoice</th>
                     </tr>
+
                     {% endfor %}
                 {% else %}
                 <tr><td colspan="5" style="text-align: center; padding: 60px; color: #94a3b8;">No transactions recorded in this period.</td></tr>

@@ -130,17 +130,21 @@ class TreasurerRepository:
 
     @staticmethod
     def get_treasurer_by_society(society_id):
-        """Required to enforce 1 Treasurer per Society rule."""
-        if not society_id: return None
+        """Finds the Treasurer for a specific society."""
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
-            cur.execute("SELECT full_name FROM users WHERE society_id = %s AND role = 'treasurer'", (society_id,))
+            cur.execute("""
+                SELECT id, full_name 
+                FROM users 
+                WHERE society_id = %s AND role = 'treasurer' 
+                LIMIT 1
+            """, (society_id,))
             return cur.fetchone()
         finally:
             cur.close()
             conn.close()
-
+            
     @staticmethod
     def get_all_with_societies():
         conn = get_db_connection()

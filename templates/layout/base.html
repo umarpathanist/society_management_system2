@@ -350,6 +350,21 @@
                 <li class="nav-item"><a href="{{ url_for('owners.my_maintenance') }}" class="nav-link"><span
                             class="icon-wrap">🧾</span> My Dues</a></li>
                 {% endif %}
+                
+<li class="nav-item">
+    <a href="{{ url_for('notifications.index') }}" class="nav-link" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span class="icon-wrap">🔔</span> Notifications
+        </div>
+        
+        {# Use 'unread_notif_count' - matches app.py #}
+        {% if unread_notif_count and unread_notif_count > 0 %}
+            <span style="background: #ef4444; color: white; font-size: 10px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                {{ unread_notif_count }}
+            </span>
+        {% endif %}
+    </a>
+</li>
 
                 <!-- Settings -->
                 <div class="nav-label">Settings</div>
