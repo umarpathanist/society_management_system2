@@ -1,16 +1,18 @@
 {% extends "layout/base.html" %}
-{% block title %}Society Dashboard{% endblock %}
+{% block title %}Society Intelligence Dashboard{% endblock %}
 
 {% block content %}
+<!-- Load Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
+    /* Unified Dashboard Styles */
     .stat-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 25px;
         margin-bottom: 30px;
     }
-
-    
 
     .stat-card {
         position: relative;
@@ -35,7 +37,6 @@
     .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; opacity: 0.9; margin-bottom: 8px; display: block; }
     .stat-value { font-size: 32px; font-weight: 800; margin: 0; position: relative; z-index: 2; }
     .watermark { position: absolute; right: -10px; bottom: -15px; font-size: 80px; opacity: 0.15; transform: rotate(-15deg); pointer-events: none; }
-    .stat-badge { margin-top: 15px; font-size: 11px; background: rgba(255, 255, 255, 0.2); padding: 4px 10px; border-radius: 50px; display: inline-block; font-weight: 600; }
     .section-title { font-size: 15px; font-weight: 700; color: #64748b; margin: 40px 0 20px 0; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
 </style>
 
@@ -51,41 +52,96 @@
         <div class="stat-card bg-societies">
             <span class="stat-label">Total Societies</span>
             <h2 class="stat-value">{{ super_stats.societies }}</h2>
-            <div class="stat-badge">🏢 Registered Entities</div>
             <div class="watermark">🏙️</div>
         </div>
-        <!-- <div class="stat-card bg-admins">
+        <div class="stat-card bg-admins">
             <span class="stat-label">System Staff</span>
             <h2 class="stat-value">{{ super_stats.admins + super_stats.treasurers }}</h2>
-            <div class="stat-badge">👤 Managed Accounts</div>
             <div class="watermark">🛡️</div>
-        </div> -->
-
-
-        <!-- <div class="stat-card bg-residents">
+        </div>
+        <div class="stat-card bg-residents">
             <span class="stat-label">Total Residents</span>
             <h2 class="stat-value">{{ super_stats.owners + super_stats.tenants }}</h2>
-            <div class="stat-badge">👥 User Base</div>
-            <div class="watermark">🏠</div>
-        </div> -->
-    
+            <div class="watermark">👥</div>
+        </div>
     </div>
 {% endif %}
 
-<!-- 2. OPERATIONAL DASHBOARD (Admins/Treasurers only) -->
+<!-- 2. KPI PROGRESS BARS (Admin/Treasurer/Super Admin) -->
+{% if kpis %}
+    <div class="section-title"><span>📊</span> Performance Metrics</div>
+    <div class="stat-container" style="grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div class="card" style="background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f1f5f9;">
+            <span style="font-size: 12px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Occupancy Rate</span>
+            <h2 style="margin: 10px 0; font-size: 32px; color: #4f46e5;">{{ kpis.occupancy }}%</h2>
+            <div style="width: 100%; height: 8px; background: #f1f5f9; border-radius: 10px;">
+                <div style="width: {{ kpis.occupancy }}%; height: 100%; background: #4f46e5; border-radius: 10px;"></div>
+            </div>
+        </div>
+        <div class="card" style="background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f1f5f9;">
+            <span style="font-size: 12px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Collection Efficiency</span>
+            <h2 style="margin: 10px 0; font-size: 32px; color: #10b981;">{{ kpis.collection }}%</h2>
+            <div style="width: 100%; height: 8px; background: #f1f5f9; border-radius: 10px;">
+                <div style="width: {{ kpis.collection }}%; height: 100%; background: #10b981; border-radius: 10px;"></div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- 3. FINANCIAL CHART (Visible if stats data exists) -->
 {% if stats %}
-    <div class="section-title"><span>💰</span> Financial Overview</div>
-    <div class="stat-container">
-        <div class="stat-card bg-income"><span class="stat-label">Total Revenue</span><h2 class="stat-value">₹{{ "{:,.2f}".format(stats.total_income) }}</h2><div class="watermark">📥</div></div>
-        <div class="stat-card bg-expense"><span class="stat-label">Total Spending</span><h2 class="stat-value">₹{{ "{:,.2f}".format(stats.total_expenses) }}</h2><div class="watermark">📤</div></div>
-        <div class="stat-card bg-balance"><span class="stat-label">Net Treasury</span><h2 class="stat-value">₹{{ "{:,.2f}".format(stats.net_balance) }}</h2><div class="watermark">🏦</div></div>
+    <div class="section-title"><span>📈</span> Financial Trend</div>
+    <div class="card" style="background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; margin-bottom: 40px;">
+        <canvas id="financeChart" style="max-height: 350px; width: 100%;"></canvas>
     </div>
 
-    <div class="section-title"><span>👥</span> Resident Insights</div>
-    <div class="stat-container">
-        <div class="stat-card bg-residents"><span class="stat-label">Flat Owners</span><h2 class="stat-value">{{ stats.owner_count }}</h2><div class="watermark">🤝</div></div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);"><span class="stat-label">Active Tenants</span><h2 class="stat-value">{{ stats.tenant_count }}</h2><div class="watermark">🏢</div></div>
-        <div style="visibility: hidden;"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Total Revenue', 'Total Spending', 'Net Balance'],
+                    datasets: [{
+                        label: 'Amount (₹)',
+                        data: [{{ stats.total_income }}, {{ stats.total_expenses }}, {{ stats.net_balance }}],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.8)', // Green
+                            'rgba(244, 63, 94, 0.8)',   // Red
+                            'rgba(79, 70, 229, 0.8)'    // Indigo
+                        ],
+                        borderRadius: 12,
+                        borderWidth: 0,
+                        barThickness: 50
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
+{% endif %}
+
+<!-- 4. RESIDENT VIEW (My Account Summary) -->
+{% if owner_summary %}
+    <div class="section-title"><span>🔑</span> My Property Summary</div>
+    <div class="card" style="background: white; border-radius: 24px; padding: 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 600px; border-top: 6px solid #4e46e5;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #1e293b;">Dues Overview</h3>
+            <span style="background: #eef2ff; color: #4e46e5; padding: 5px 15px; border-radius: 20px; font-weight: 700; font-size: 12px;">{{ owner_summary.total_properties }} Flats</span>
+        </div>
+        <div style="background: #f8fafc; padding: 25px; border-radius: 15px; text-align: center;">
+            <p style="font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Outstanding Balance</p>
+            <h2 style="font-size: 38px; font-weight: 800; color: #dc2626; margin: 10px 0;">₹{{ "{:,.2f}".format(owner_summary.total_balance) }}</h2>
+        </div>
+        <a href="{{ url_for('owners.my_maintenance') }}" style="display: block; text-align: center; background: #4e46e5; color: white; padding: 15px; border-radius: 12px; text-decoration: none; font-weight: 700; margin-top: 25px;">View Detailed Statement</a>
     </div>
 {% endif %}
 

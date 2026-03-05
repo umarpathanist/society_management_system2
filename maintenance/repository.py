@@ -379,6 +379,7 @@ class MaintenanceRepository:
                     b.name as block_name,
                     
                     -- Society Details
+                    s.id as society_id,
                     s.name as society_name,
                     s.address as society_address,
                     

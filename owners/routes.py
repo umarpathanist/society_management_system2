@@ -389,6 +389,17 @@ def verify_payment():
         pdf = generate_pdf_blob('maintenance/invoice_template.html', context)
         send_email_with_pdf(invoice_data['owner_email'], invoice_data['owner_name'], pdf, f"Receipt_{bill_id}.pdf", invoice_data)
 
+        # Notify the treasurer
+        treasurer = TreasurerRepository.get_treasurer_by_society(invoice_data['society_id'])
+        if treasurer:
+            payment_date = datetime.now().strftime("%d-%m-%Y")
+            NotificationRepository.create(
+                user_id=treasurer['id'],
+                title="Payment Received 💰",
+                message=f"Flat {invoice_data['flat_number']} has paid ₹{invoice_data['amount']} for {invoice_data['month']} on {payment_date}.",
+                notif_type="finance"
+            )
+
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
@@ -494,11 +505,14 @@ def pay_bill(maintenance_id):
         treasurer = TreasurerRepository.get_treasurer_by_society(invoice_data['society_id'])
         
         if treasurer:
+            # Get current date for the message
+            payment_date = datetime.now().strftime("%d-%m-%Y")
+            
             NotificationRepository.create(
-                user_id=treasurer['id'], # Pushes to Treasurer's account
-                title="New Payment Alert 💰",
-                message=f"Resident {invoice_data['owner_name']} has paid ₹{invoice_data['amount']} for Flat {invoice_data['flat_number']}.",
-                notif_type="payment"
+                user_id=treasurer['id'],
+                title="Payment Received 💰",
+                message=f"Flat {invoice_data['flat_number']} has paid ₹{invoice_data['amount']} for {invoice_data['month']} on {payment_date}.",
+                notif_type="finance"
             )
 
         # --- STEP 4: PDF & EMAIL RECEIPT ---

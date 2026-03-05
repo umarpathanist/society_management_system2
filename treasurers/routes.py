@@ -623,6 +623,11 @@ def generate_maintenance():
             flash("Please select a target society first.", "warning")
             return redirect(url_for("treasurers.generate_maintenance"))
 
+        from database.connection import get_db_connection
+        from psycopg2.extras import RealDictCursor
+        from utils.mail import send_maintenance_reminder
+        from notifications.repository import NotificationRepository
+
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 

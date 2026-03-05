@@ -1,4 +1,3 @@
-
 from database.connection import get_db_connection
 from psycopg2.extras import RealDictCursor
 
@@ -6,10 +5,7 @@ class NotificationRepository:
 
     @staticmethod
     def create(user_id, title, message, notif_type='system'):
-        """
-        FIXES: unexpected keyword argument 'user_id'
-        Creates a dashboard alert for a specific user.
-        """
+        """Creates a dashboard alert for a specific user."""
         conn = get_db_connection()
         cur = conn.cursor()
         try:
@@ -21,19 +17,14 @@ class NotificationRepository:
             return True
         except Exception as e:
             conn.rollback()
-            print(f"Error saving notification: {e}")
             raise e
         finally:
             cur.close()
             conn.close()
 
-    # ... keep your other methods like get_all_by_user, delete, etc. ...
-
     @staticmethod
     def get_all_by_user(user_id):
-        """
-        FIXES AttributeError: fetches all notifications for a specific user.
-        """
+        """Fetches all notifications for a specific user."""
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
@@ -49,8 +40,34 @@ class NotificationRepository:
             conn.close()
 
     @staticmethod
+    def mark_single_read(notif_id):
+        """Marks one notification as read."""
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("UPDATE notifications SET is_read = TRUE WHERE id = %s", (notif_id,))
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
+    @staticmethod
+    def mark_multiple_read(notif_ids):
+        """Marks a list of notifications as read."""
+        if not notif_ids: return
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            # Convert list to tuple for SQL 'IN' clause
+            cur.execute("UPDATE notifications SET is_read = TRUE WHERE id IN %s", (tuple(notif_ids),))
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
+    @staticmethod
     def mark_all_read(user_id):
-        """Marks all unread notifications as read for a user."""
+        """Marks every notification for a user as read. (FIXED MISSING METHOD)"""
         conn = get_db_connection()
         cur = conn.cursor()
         try:
@@ -84,16 +101,28 @@ class NotificationRepository:
             cur.close()
             conn.close()
 
-
-
-
     @staticmethod
     def get_unread_count(user_id):
         """Returns the number of unread notifications for a user."""
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM notifications WHERE user_id = %s AND is_read = FALSE", (user_id,))
-        count = cur.fetchone()[0]
+        try:
+            cur.execute("SELECT COUNT(*) FROM notifications WHERE user_id = %s AND is_read = FALSE", (user_id,))
+            return cur.fetchone()[0]
+        finally:
+            cur.close()
+            conn.close()
+
+    # admin/repository.py
+
+@staticmethod
+def get_admins_by_society(society_id):
+    """Returns a list of user IDs for all Admins in a specific society."""
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute("SELECT id FROM users WHERE society_id = %s AND role = 'admin'", (society_id,))
+        return cur.fetchall()
+    finally:
         cur.close()
         conn.close()
-        return count

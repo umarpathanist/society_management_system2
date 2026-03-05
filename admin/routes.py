@@ -91,6 +91,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from utils.decorators import login_required, role_required
 from admin.service import AdminService
 from societies.repository import SocietyRepository
+from notifications.repository import NotificationRepository
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -116,8 +117,17 @@ def add_admin():
         }
         
         try:
-            AdminService.create_admin(form_data)
+            new_admin_id = AdminService.create_admin(form_data)
             flash("Admin created and credentials emailed! ✅", "success")
+            
+            # Notify the new admin
+            NotificationRepository.create(
+                user_id=new_admin_id, # Welcome the new admin
+                title="Welcome to SocietyHQ 🛡️",
+                message="Your account is active. Please start by assigning flats to owners.",
+                notif_type="system"
+            )
+            
             return redirect(url_for("admin.list_admins"))
         except ValueError as e:
             flash(str(e), "warning")

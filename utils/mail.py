@@ -160,3 +160,32 @@ def send_async_email(app, msg):
             print(f"Professional Receipt sent to: {msg.recipients[0]}")
         except Exception as e:
             print(f"Mail Delivery Failed: {e}")
+
+# Inside utils/mail.py
+
+def send_sla_escalation_email(admin_email, admin_name, ticket_id, ticket_title):
+    """Sends an automated nudge to the Admin regarding an overdue ticket."""
+    app = current_app._get_current_object()
+    subject = f"⚠️ SLA ESCALATION: Ticket #TKT-{ticket_id} is Overdue"
+    
+    body = f"""
+    Hello {admin_name},
+
+    SYSTEM ALERT: A maintenance request has exceeded the 48-hour SLA period.
+    
+    Ticket Details:
+    --------------------------------------
+    Ticket ID: #TKT-{ticket_id}
+    Subject: {ticket_title}
+    Status: Open (Overdue)
+    --------------------------------------
+    
+    Please review and resolve this request immediately:
+    URL: http://127.0.0.1:5000/tickets/view/{ticket_id}
+
+    Regards,
+    SocietyHQ Automation Engine
+    """
+    
+    msg = Message(subject, recipients=[admin_email], body=body)
+    threading.Thread(target=send_async_email, args=(app, msg)).start()

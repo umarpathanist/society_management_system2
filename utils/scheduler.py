@@ -215,3 +215,78 @@ def auto_generate_maintenance(app):
                 cur.close()
             if conn:
                 conn.close()
+
+
+# Inside utils/scheduler.py
+from tickets.repository import TicketRepository
+from utils.mail import send_sla_escalation_email
+
+def check_ticket_sla(app):
+    """
+    Scans for tickets older than 48 hours and notifies Admins.
+    Called automatically by the background clock.
+    """
+    with app.app_context():
+        print("LOG: Starting SLA Escalation Check...")
+        try:
+            overdue_tickets = TicketRepository.get_overdue_tickets()
+            
+            for t in overdue_tickets:
+                send_sla_escalation_email(
+                    admin_email=t['admin_email'],
+                    admin_name=t['admin_name'],
+                    ticket_id=t['ticket_id'],
+                    ticket_title=t['title']
+                )
+                print(f"LOG: SLA Alert sent for Ticket #{t['ticket_id']} to {t['admin_email']}")
+                
+            print(f"LOG: SLA Check complete. {len(overdue_tickets)} escalations processed.")
+        except Exception as e:
+            print(f"SLA SCHEDULER ERROR: {e}")  
+
+from datetime import datetime
+from database.connection import get_db_connection
+from psycopg2.extras import RealDictCursor
+from flask_mail import Message
+from extensions import mail
+from utils.report_gen import generate_csv_report # Import correctly
+
+def email_scheduled_reports(app):
+    """
+    Background Task: Sends weekly reports to all Society Admins.
+    """
+    with app.app_context():
+        print(f"--- [REPORT SCHEDULER START: {datetime.now()}] ---")
+        
+        conn = get_db_connection()
+        # FIXED: Cursor must be defined correctly on one line
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        try:
+            # 1. Find all active Society Admins
+            cur.execute("""
+                SELECT email, full_name, society_id 
+                FROM users 
+                WHERE role = 'admin' AND society_id IS NOT NULL
+            """)
+            admins = cur.fetchall()
+
+            for adm in admins:
+                # 2. Generate CSV for this admin's society
+                csv_data = generate_csv_report(adm['society_id'])
+                
+                # 3. Create and send Email
+                msg = Message(
+                    subject=f"📊 Weekly Report - {datetime.now().strftime('%d %b %Y')}",
+                    recipients=[adm['email']],
+                    body=f"Hello {adm['full_name']},\n\nPlease find attached your weekly report."
+                )
+                msg.attach("weekly_report.csv", "text/csv", csv_data)
+                mail.send(msg)
+                print(f"LOG: Email sent to {adm['email']}")
+
+        except Exception as e:
+            print(f"!!! SCHEDULER ERROR: {e}")
+        finally:
+            cur.close()
+            conn.close()
