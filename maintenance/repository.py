@@ -358,6 +358,48 @@ class MaintenanceRepository:
         
 # maintenance/repository.py
 
+    # @staticmethod
+    # def get_full_invoice_data(maintenance_id):
+    #     conn = get_db_connection()
+    #     cur = conn.cursor(cursor_factory=RealDictCursor)
+    #     try:
+    #         cur.execute("""
+    #             SELECT 
+    #                 -- Maintenance Details
+    #                 m.id,                -- CHANGED: Removed 'as maintenance_id'
+    #                 m.amount,
+    #                 m.month,
+    #                 m.year,
+    #                 m.status,
+    #                 m.due_date,
+    #                 m.paid_date,
+                    
+    #                 -- Flat & Block Details
+    #                 f.flat_number,
+    #                 b.name as block_name,
+                    
+    #                 -- Society Details
+    #                 s.id as society_id,
+    #                 s.name as society_name,
+    #                 s.address as society_address,
+                    
+    #                 -- User (Owner/Payer) Details
+    #                 COALESCE(u.full_name, 'Resident') as owner_name, -- Added fallback for 'None'
+    #                 u.email as owner_email
+                    
+    #             FROM maintenance m
+    #             JOIN flats f ON m.flat_id = f.id
+    #             JOIN blocks b ON f.block_id = b.id
+    #             JOIN societies s ON b.society_id = s.id
+    #             LEFT JOIN users u ON f.owner_id = u.id
+    #             WHERE m.id = %s
+    #         """, (maintenance_id,))
+            
+    #         return cur.fetchone()
+    #     finally:
+    #         cur.close()
+    #         conn.close()
+
     @staticmethod
     def get_full_invoice_data(maintenance_id):
         conn = get_db_connection()
@@ -365,33 +407,21 @@ class MaintenanceRepository:
         try:
             cur.execute("""
                 SELECT 
-                    -- Maintenance Details
-                    m.id,                -- CHANGED: Removed 'as maintenance_id'
-                    m.amount,
-                    m.month,
-                    m.year,
-                    m.status,
-                    m.due_date,
-                    m.paid_date,
-                    
-                    -- Flat & Block Details
+                    m.id, m.amount, m.month, m.year, m.status, m.due_date, m.paid_date,
                     f.flat_number,
                     b.name as block_name,
+                    s.id as society_id, s.name as society_name, s.address as society_address,
                     
-                    -- Society Details
-                    s.id as society_id,
-                    s.name as society_name,
-                    s.address as society_address,
-                    
-                    -- User (Owner/Payer) Details
-                    COALESCE(u.full_name, 'Resident') as owner_name, -- Added fallback for 'None'
-                    u.email as owner_email
+                    -- PICK THE RIGHT PERSON: Use Tenant info if exists, otherwise Owner
+                    COALESCE(ut.full_name, uo.full_name, 'Resident') as recipient_name,
+                    COALESCE(ut.email, uo.email) as recipient_email
                     
                 FROM maintenance m
                 JOIN flats f ON m.flat_id = f.id
                 JOIN blocks b ON f.block_id = b.id
                 JOIN societies s ON b.society_id = s.id
-                LEFT JOIN users u ON f.owner_id = u.id
+                LEFT JOIN users uo ON f.owner_id = uo.id   -- Join for Owner
+                LEFT JOIN users ut ON f.tenant_id = ut.id  -- FIXED: Match tenant_id with ut.id
                 WHERE m.id = %s
             """, (maintenance_id,))
             
