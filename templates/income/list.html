@@ -4,10 +4,37 @@
 {% block content %}
 <style>
     /* 1. Header & Layout */
-    .ledger-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
-    .filter-pill { background: #fff; padding: 10px 24px; border-radius: 50px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-top: 20px; width: fit-content; }
-    
-    /* 2. Grid Styling - Perfectly aligned columns */
+    .ledger-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .ledger-header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .filter-pill {
+        background: #fff;
+        padding: 10px 24px;
+        border-radius: 50px;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        margin-top: 20px;
+        width: fit-content;
+        flex-wrap: wrap;
+    }
+
+    /* 2. Grid Styling */
     .ledger-labels {
         display: grid;
         grid-template-columns: 140px 2fr 2.5fr 150px;
@@ -32,49 +59,115 @@
         transition: all 0.3s ease;
         box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
-    .transaction-card:hover { 
-        transform: translateX(10px); 
-        border-color: #4e46e5; 
-        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.08); 
+    .transaction-card:hover {
+        transform: translateX(10px);
+        border-color: #4e46e5;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.08);
     }
 
     /* 3. Column Content Styling */
     .col-date { font-size: 14px; color: #94a3b8; font-weight: 600; }
-    
+
     .col-category { display: flex; flex-direction: column; gap: 4px; }
     .cat-name { font-weight: 700; color: #1e293b; font-size: 15px; }
-    .cat-period { 
-        font-size: 11px; 
-        color: #6366f1; 
-        background: #eef2ff; 
-        display: inline-block; 
+    .cat-period {
+        font-size: 11px;
+        color: #6366f1;
+        background: #eef2ff;
+        display: inline-block;
         width: fit-content;
-        padding: 2px 8px; 
-        border-radius: 6px; 
-        font-weight: 700; 
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-weight: 700;
         text-transform: uppercase;
     }
-    
+
     .col-desc { font-size: 13px; color: #64748b; padding-right: 20px; line-height: 1.5; font-weight: 500; }
     .col-amount { text-align: right; font-size: 20px; font-weight: 800; color: #10b981; }
 
     /* 4. Buttons */
-    .btn-action { background: #4e46e5; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2); transition: all 0.2s; border: none; cursor: pointer; }
+    .btn-action { background: #4e46e5; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2); transition: all 0.2s; border: none; cursor: pointer; white-space: nowrap; }
     .btn-action:hover { background: #4338ca; transform: translateY(-2px); }
     .btn-action.disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; box-shadow: none; pointer-events: none; }
-    .btn-back { background: #f1f5f9; color: #64748b; padding: 12px 20px; border-radius: 14px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.2s; }
+    .btn-back { background: #f1f5f9; color: #64748b; padding: 12px 20px; border-radius: 14px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.2s; white-space: nowrap; }
     .btn-back:hover { background: #e2e8f0; color: #1e293b; }
+
+    /* Mobile field label */
+    .mobile-label {
+        display: none;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94a3b8;
+        margin-bottom: 3px;
+    }
+
+    /* Mobile-only top row — hidden on desktop */
+    .card-top-row-mobile {
+        display: none;
+    }
+
+    /* Desktop-only amount — visible on desktop */
+    .col-amount-desktop {
+        text-align: right;
+        font-size: 20px;
+        font-weight: 800;
+        color: #10b981;
+    }
+
+    /* ── Tablet (≤ 900px): tighten grid ── */
+    @media (max-width: 900px) {
+        .ledger-labels,
+        .transaction-card {
+            grid-template-columns: 110px 1.5fr 2fr 130px;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+        .col-desc { padding-right: 10px; }
+        .col-amount-desktop { font-size: 17px; }
+    }
+
+    /* ── Mobile (≤ 640px): stack as card ── */
+    @media (max-width: 640px) {
+        .ledger-labels { display: none; }
+
+        .transaction-card {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 18px 18px;
+            border-radius: 16px;
+        }
+
+        .transaction-card:hover { transform: none; }
+
+        /* Show mobile top row */
+        .card-top-row-mobile {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Hide desktop date and desktop amount columns */
+        .col-date { display: none; }
+        .col-amount-desktop { display: none; }
+
+        .col-desc { padding-right: 0; }
+        .mobile-label { display: block; }
+    }
 </style>
 
 <div class="ledger-header">
     <div>
         <h1 style="margin: 0; font-size: 28px; color: #0f172a;">💰 Income Ledger</h1>
         <p style="color: #64748b; margin-top: 5px;">Unified tracking of maintenance and miscellaneous society revenue.</p>
-        
+
         {% if session.user.role == 'super_admin' %}
         <div class="filter-pill">
             <span style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Building Context:</span>
-            <select onchange="window.location.href='?society_id=' + this.value" 
+            <select onchange="window.location.href='?society_id=' + this.value"
                     style="border: none; outline: none; font-weight: 700; color: #4e46e5; background: transparent; cursor: pointer; font-size: 14px;">
                 <option value="">-- All Societies --</option>
                 {% for s in societies %}
@@ -85,11 +178,7 @@
         {% endif %}
     </div>
 
-    <div style="display: flex; gap: 12px; align-items: center;">
-        <!-- {% if session.user.role == 'super_admin' %}
-            <a href="{{ url_for('societies.list_societies') }}" class="btn-back">← Societies</a>
-        {% endif %} -->
-        
+    <div class="ledger-header-actions">
         {% if session.user.role == 'super_admin' %}
             {% if selected_soc %}
                 <a href="{{ url_for('income.add_income', society_id=selected_soc) }}" class="btn-action">+ Record Income</a>
@@ -102,7 +191,7 @@
     </div>
 </div>
 
-<!-- COLUMN LABELS -->
+<!-- COLUMN LABELS (desktop/tablet) -->
 <div class="ledger-labels">
     <div>Transaction Date</div>
     <div>Category & Period</div>
@@ -115,32 +204,43 @@
     {% if records %}
         {% for r in records %}
         <div class="transaction-card">
-            <!-- 1. DATE -->
+
+            <!-- Mobile top row: date + amount (only visible on mobile) -->
+            <div class="card-top-row-mobile">
+                <span class="col-date" style="display:block;">{{ r.tr_date }}</span>
+                <span class="col-amount">+ ₹{{ "{:,.2f}".format(r.amount) }}</span>
+            </div>
+
+            <!-- 1. DATE (desktop/tablet only) -->
             <div class="col-date">{{ r.tr_date }}</div>
-            
+
             <!-- 2. CATEGORY & CYCLE -->
             <div class="col-category">
-        <span class="cat-name">{{ r.category }}</span>
-        <!-- This badge now shows "March 2026", etc. -->
-        <span class="cat-period">
-            <span style="font-size: 10px;">📅</span> {{ r.period }}
-        </span>
-    </div>
+                <span class="mobile-label">Category & Period</span>
+                <span class="cat-name">{{ r.category }}</span>
+                <span class="cat-period">
+                    <span style="font-size: 10px;">📅</span> {{ r.period }}
+                </span>
+            </div>
 
-            <!-- 3. DESCRIPTION (FIXED: Now showing Flat Info) -->
-            <div class="col-desc">{{ r.description }}</div>
+            <!-- 3. DESCRIPTION -->
+            <div class="col-desc">
+                <span class="mobile-label">Details</span>
+                {{ r.description }}
+            </div>
 
-            <!-- 4. AMOUNT -->
-            <div class="col-amount">+ ₹{{ "{:,.2f}".format(r.amount) }}</div>
+            <!-- 4. AMOUNT (desktop/tablet only) -->
+            <div class="col-amount-desktop">+ ₹{{ "{:,.2f}".format(r.amount) }}</div>
+
         </div>
         {% endfor %}
     {% else %}
-        <!-- EMPTY STATE -->
-        <div style="background: white; border-radius: 24px; padding: 80px; text-align: center; border: 2px dashed #e2e8f0; margin-top: 20px;">
+        <div style="background: white; border-radius: 24px; padding: 80px 20px; text-align: center; border: 2px dashed #e2e8f0; margin-top: 20px;">
             <span style="font-size: 40px; display: block; margin-bottom: 20px;">📋</span>
             <h3 style="color: #64748b; margin-top: 0;">No Records Available</h3>
             <p style="color: #94a3b8; max-width: 400px; margin: 0 auto;">Select a society from the dropdown or record a manual transaction to populate the ledger.</p>
         </div>
     {% endif %}
 </div>
+
 {% endblock %}

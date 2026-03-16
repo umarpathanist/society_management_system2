@@ -1,27 +1,23 @@
 {% extends "layout/base.html" %}
-{% block title %}Maintenance Command Center | SocietyHQ{% endblock %}
+{% block title %}Maintenance Collection | SocietyHQ{% endblock %}
 
 {% block content %}
 <style>
-    /* ── Typography & Base ── */
-    .command-header h1 {
-        font-size: 26px;
-        font-weight: 800;
-        color: #0f172a;
-        margin: 0;
-        letter-spacing: -0.5px;
-    }
-    .command-header p { color: #64748b; font-size: 15px; margin-top: 5px; margin-bottom: 0; }
+    * { box-sizing: border-box; }
 
-    /* ── Card ── */
+    .command-header h1 { font-size: 26px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
+    .command-header p   { color: #64748b; font-size: 15px; margin-top: 5px; margin-bottom: 0; }
+
     .glass-card {
         background: white;
         border-radius: 24px;
         border: 1px solid #f1f5f9;
         box-shadow: 0 10px 30px -5px rgba(0,0,0,0.04), 0 4px 6px -2px rgba(0,0,0,0.02);
+        padding: 35px;
+        max-width: 750px;
+        margin: 0 auto;
     }
 
-    /* ── Form Inputs ── */
     .form-group label {
         display: block;
         font-size: 12px;
@@ -41,239 +37,478 @@
         color: #1e293b;
         outline: none;
         transition: all 0.2s;
-        box-sizing: border-box;
     }
-    .modern-input:focus {
-        background: white;
-        border-color: #4e46e5;
-        box-shadow: 0 0 0 4px rgba(78,70,229,0.1);
+    .modern-input:focus { background: white; border-color: #4e46e5; box-shadow: 0 0 0 4px rgba(78,70,229,0.1); }
+    .modern-input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .cmd-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 35px;
+        max-width: 750px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .btn-back {
+        background: #f1f5f9; color: #64748b;
+        padding: 11px 20px; border-radius: 14px;
+        text-decoration: none; font-weight: 700; font-size: 14px;
+        transition: 0.2s; white-space: nowrap;
+    }
+    .btn-back:hover { background: #e2e8f0; color: #1e293b; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* Pending banner */
+    .pending-banner {
+        background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+        border: 1.5px solid #c7d2fe;
+        border-radius: 14px;
+        padding: 14px 20px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #4338ca;
+        margin-bottom: 22px;
+    }
+    .pending-banner.visible { display: flex; }
+
+    /* Summary box */
+    .summary-box {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 22px;
+        display: none;
+    }
+    .summary-box.visible { display: block; }
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 14px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .summary-row:last-child { border: none; }
+    .summary-row span:first-child { color: #64748b; font-weight: 600; }
+    .summary-row span:last-child  { color: #1e293b; font-weight: 800; }
+    .total-row span:last-child { color: #10b981 !important; font-size: 20px !important; }
+
+    .status-badge {
+        display: inline-block; padding: 3px 10px;
+        border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase;
+    }
+    .badge-unpaid { background: #fff1f2; color: #e11d48; }
+    .badge-paid   { background: #ecfdf5; color: #059669; }
+
+    .divider { border: none; border-top: 1px solid #f1f5f9; margin: 22px 0; }
+
+    /* Payment buttons */
+    .payment-btns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 8px;
     }
 
-    /* ── Buttons ── */
-    .btn-generate {
-        width: 100%;
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        color: white;
+    .btn-cash {
         padding: 16px;
         border: none;
         border-radius: 16px;
         font-weight: 700;
-        font-size: 16px;
+        font-size: 15px;
         cursor: pointer;
-        box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);
         transition: all 0.3s;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 10px;
-    }
-    .btn-generate:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 15px 25px -5px rgba(79,70,229,0.5);
-    }
-    .btn-remind {
-        width: 100%;
-        background: #6366f1;
+        background: linear-gradient(135deg, #10b981, #059669);
         color: white;
-        border: none;
-        padding: 14px;
-        border-radius: 14px;
-        font-weight: 700;
-        font-size: 14px;
-        cursor: pointer;
-        transition: all 0.2s;
+        box-shadow: 0 10px 20px -5px rgba(16,185,129,0.4);
     }
-    .btn-remind:hover {
-        transform: translateY(-2px);
+    .btn-cash:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(16,185,129,0.5); }
+
+    .btn-online {
+        padding: 16px;
+        border: none;
+        border-radius: 16px;
+        font-weight: 700;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        color: white;
         box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);
     }
+    .btn-online:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(79,70,229,0.5); }
 
-    /* ── Status dot ── */
-    .status-dot {
-        height: 8px; width: 8px;
-        background: #10b981;
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 10px #10b981;
-    }
-
-    /* ── Page header ── */
-    .cmd-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-bottom: 35px;
-    }
-    .btn-collect {
-        background: #10b981;
-        color: white;
-        padding: 12px 22px;
-        border-radius: 14px;
-        text-decoration: none;
-        font-weight: 700;
-        font-size: 14px;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        box-shadow: 0 4px 12px rgba(16,185,129,0.2);
-        white-space: nowrap;
-        transition: background 0.2s;
-    }
-    .btn-collect:hover { background: #059669; }
-
-    /* ── Two-column grid ── */
-    .main-grid {
-        display: grid;
-        grid-template-columns: 1.6fr 1fr;
-        gap: 30px;
-        align-items: start;
-    }
-    .month-year-grid {
-        display: grid;
-        grid-template-columns: 1.5fr 1fr;
-        gap: 20px;
-        margin-bottom: 25px;
-    }
-    .sidebar-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 22px;
-    }
-
-    /* ── Responsive ── */
-    @media (max-width: 900px) {
-        .main-grid { grid-template-columns: 1fr; }
-        .sidebar-stack { flex-direction: column; }
-    }
     @media (max-width: 540px) {
-        .month-year-grid { grid-template-columns: 1fr; }
-        .glass-card { border-radius: 18px; }
-        .cmd-top { flex-direction: column; align-items: flex-start; }
-        .btn-collect { width: 100%; justify-content: center; }
-        .command-header h1 { font-size: 22px; }
-        .btn-generate { font-size: 14px; padding: 14px; }
+        .two-col { grid-template-columns: 1fr; }
+        .payment-btns { grid-template-columns: 1fr; }
+        .glass-card { border-radius: 18px; padding: 20px 16px; }
+        .cmd-top { flex-direction: column; align-items: flex-start; margin-bottom: 20px; }
+        .btn-back { width: 100%; text-align: center; }
     }
 </style>
 
-<!-- Top Header -->
+<!-- Header -->
 <div class="cmd-top command-header">
     <div>
-        <h1>🏗️ Maintenance Command</h1>
-        <p>Billing control and resident notification hub.</p>
+        <h1>💰 Collect Maintenance</h1>
+        <p>Record current or <strong>advance</strong> payments for residents.</p>
     </div>
-    <a href="{{ url_for('treasurers.collect_maintenance') }}" class="btn-collect">
-        <span>💰</span> Collect Maintenance
-    </a>
+    <a href="{{ url_for('treasurers.generate_maintenance') }}" class="btn-back">← Back to Command</a>
 </div>
 
-<!-- Main 2-column grid -->
-<div class="main-grid">
+<div class="glass-card">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:30px;">
+        <div style="background:#ecfdf5; width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">🏠</div>
+        <h3 style="margin:0; font-size:18px; color:#1e293b;">Payment Collection</h3>
+    </div>
 
-    <!-- LEFT: Billing Form -->
-    <div class="glass-card" style="padding: 35px;">
-        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 30px;">
-            <div style="background: #eef2ff; width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">🧾</div>
-            <h3 style="margin: 0; font-size: 18px; color: #1e293b;">Billing Cycle Configuration</h3>
+    <form method="POST" action="{{ url_for('treasurers.collect_maintenance') }}" id="collect-form">
+        <input type="hidden" name="payment_mode" id="payment-mode" value="cash">
+
+        {% if session.user.role == 'super_admin' %}
+        <div class="form-group" style="margin-bottom:22px;">
+            <label>Society</label>
+            <select class="modern-input" onchange="window.location.href='?society_id='+this.value">
+                <option value="">-- Select Society --</option>
+                {% for s in societies %}
+                    <option value="{{ s.id }}" {% if s.id == selected_soc %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
         </div>
+        <hr class="divider">
+        {% endif %}
 
-        <form method="POST">
-            <input type="hidden" name="action" value="generate">
-
-            {% if session.user.role == 'super_admin' %}
-            <div class="form-group" style="margin-bottom: 22px;">
-                <label>Select Society</label>
-                <select name="society_id" class="modern-input" required>
-                    <option value="">-- Choose Society to Bill --</option>
-                    {% for s in societies %}
-                        <option value="{{ s.id }}">{{ s.name }}</option>
+        <!-- Block + Flat -->
+        <div class="two-col" style="margin-bottom:22px;">
+            <div class="form-group">
+                <label>Select Block</label>
+                <select id="block-select" class="modern-input" onchange="loadFlats(this.value)"
+                        {% if not blocks %}disabled{% endif %}>
+                    <option value="">-- Select Block --</option>
+                    {% for b in blocks %}
+                        <option value="{{ b.id }}">{{ b.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            {% endif %}
-
-            <div class="form-group" style="margin-bottom: 22px;">
-                <label>Monthly Maintenance Amount (₹)</label>
-                <input type="number" name="amount" class="modern-input" required placeholder="e.g. 2500">
+            <div class="form-group">
+                <label>Select Flat</label>
+                <select name="flat_id" id="flat-select" class="modern-input"
+                        onchange="onFlatChange(this)" disabled required>
+                    <option value="">-- Select Flat --</option>
+                </select>
             </div>
+        </div>
 
-            <div class="month-year-grid">
-                <div class="form-group">
-                    <label>Month</label>
-                    <select name="month" class="modern-input" required>
-                        {% for m in ["January","February","March","April","May","June","July","August","September","October","November","December"] %}
-                            <option value="{{ m }}">{{ m }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Year</label>
-                    <input type="number" name="year" class="modern-input" value="2024" required>
-                </div>
+        <!-- Pending banner -->
+        <div class="pending-banner" id="pending-banner">
+            <span>📅</span>
+            <span id="pending-text">Payment Starts From: —</span>
+        </div>
+
+        <!-- Monthly Amount -->
+        <div class="form-group" style="margin-bottom:22px;">
+            <label>Monthly Amount (₹)</label>
+            <input type="number" name="amount" id="amount-input" class="modern-input"
+                   placeholder="e.g. 1500" oninput="recalcTotal()" required>
+        </div>
+
+        <hr class="divider">
+
+        <!-- From period -->
+        <div class="two-col" style="margin-bottom:16px;">
+            <div class="form-group">
+                <label>From Month</label>
+                <select name="start_month" id="start-month" class="modern-input" onchange="recalcTotal()" required>
+                    {% for m in ["January","February","March","April","May","June",
+                                 "July","August","September","October","November","December"] %}
+                        <option value="{{ m }}">{{ m }}</option>
+                    {% endfor %}
+                </select>
             </div>
-
-            <div class="form-group" style="margin-bottom: 35px;">
-                <label>Final Payment Due Date</label>
-                <input type="date" name="due_date" class="modern-input" required>
+            <div class="form-group">
+                <label>From Year</label>
+                <input type="number" name="start_year" id="start-year" class="modern-input"
+                       value="{{ now.year }}" oninput="recalcTotal()" required>
             </div>
+        </div>
 
-            <button type="submit" class="btn-generate">
-                <span>🚀</span> Generate &amp; Notify All Residents
+        <!-- To period -->
+        <div class="two-col" style="margin-bottom:22px;">
+            <div class="form-group">
+                <label>Advance Payment Until (Month)</label>
+                <select name="end_month" id="end-month" class="modern-input" onchange="recalcTotal()" required>
+                    {% for m in ["January","February","March","April","May","June",
+                                 "July","August","September","October","November","December"] %}
+                        <option value="{{ m }}">{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Year</label>
+                <input type="number" name="end_year" id="end-year" class="modern-input"
+                       value="{{ now.year }}" oninput="recalcTotal()" required>
+            </div>
+        </div>
+
+        <!-- Summary box -->
+        <div class="summary-box" id="summary-box">
+            <div class="summary-row">
+                <span>Flat</span>
+                <span id="sum-flat">—</span>
+            </div>
+            <div class="summary-row">
+                <span>Next Unpaid Bill</span>
+                <span id="sum-status">—</span>
+            </div>
+            <div class="summary-row">
+                <span>Due Status</span>
+                <span id="sum-badge">—</span>
+            </div>
+            <div class="summary-row total-row">
+                <span>Total Payable</span>
+                <span id="sum-total">—</span>
+            </div>
+        </div>
+
+        <!-- Cash + Online buttons -->
+        <div class="payment-btns">
+            <button type="button" class="btn-cash" onclick="submitCash()">
+                <span>💵</span> Pay via Cash
             </button>
-
-            <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 18px;">
-                ℹ️ Bills are only created for <strong>Occupied</strong> units.
-            </p>
-        </form>
-    </div>
-
-    <!-- RIGHT: Sidebar -->
-    <div class="sidebar-stack">
-
-        <!-- System Intelligence -->
-        <div class="glass-card" style="background: #0f172a; color: white; padding: 28px; border: none;">
-            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
-                <span style="font-size: 26px;">🤖</span>
-                <h4 style="margin: 0; font-size: 16px; font-weight: 700;">System Intelligence</h4>
-            </div>
-            <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin: 0;">
-                The core engine generates monthly cycles and dispatches email notifications on the <strong>1st of every month</strong>.
-            </p>
-            <div style="margin-top: 18px; font-size: 12px; color: #10b981; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-                <span class="status-dot"></span> SYSTEM CLOCK: ACTIVE
-            </div>
+            <button type="button" class="btn-online" onclick="submitOnline()">
+                <span>📲</span> Pay via Online
+            </button>
         </div>
 
-        <!-- Bulk Reminders -->
-        <div class="glass-card" style="padding: 28px;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                <span style="font-size: 22px;">🔔</span>
-                <h4 style="margin: 0; font-size: 16px; color: #1e293b;">Bulk Reminders</h4>
-            </div>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 22px; line-height: 1.5;">
-                Send a manual nudge to residents who haven't paid their current month's bills.
-            </p>
-
-            <form method="POST">
-                <input type="hidden" name="action" value="remind">
-                {% if session.user.role == 'super_admin' %}
-                    <select name="society_id" required class="modern-input"
-                            style="font-size: 13px; margin-bottom: 14px; padding: 10px 14px;">
-                        <option value="">-- Choose Society --</option>
-                        {% for s in societies %}
-                            <option value="{{ s.id }}">{{ s.name }}</option>
-                        {% endfor %}
-                    </select>
-                {% endif %}
-                <button type="submit" class="btn-remind">Send "Unpaid" Alerts</button>
-            </form>
-
-            <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 14px;">
-                * Only targets members with Unpaid status.
-            </p>
-        </div>
-
-    </div>
+        <p style="text-align:center; color:#94a3b8; font-size:12px; margin-top:14px;">
+            ℹ️ Creates or updates bills for the selected period and marks them <strong>Paid</strong>.
+        </p>
+    </form>
 </div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const MONTHS = ["January","February","March","April","May","June",
+                "July","August","September","October","November","December"];
+const MONTH_NUM = {};
+MONTHS.forEach((m, i) => MONTH_NUM[m] = i + 1);
+
+// ── Cash: normal form submit ──
+function submitCash() {
+    document.getElementById('payment-mode').value = 'cash';
+    document.getElementById('collect-form').submit();
+}
+
+// ── Online: AJAX → Razorpay modal ──
+function submitOnline() {
+    const flatId = document.getElementById('flat-select').value;
+    const amount = document.getElementById('amount-input').value;
+    const sMonth = document.getElementById('start-month').value;
+    const sYear  = document.getElementById('start-year').value;
+    const eMonth = document.getElementById('end-month').value;
+    const eYear  = document.getElementById('end-year').value;
+
+    if (!flatId || !amount || !sMonth || !sYear || !eMonth || !eYear) {
+        alert('Please fill all fields before paying online.');
+        return;
+    }
+
+    // Get society_id from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const societyId = urlParams.get('society_id') || '';
+
+    // Build FormData manually
+    const formData = new FormData();
+    formData.append('flat_id',      flatId);
+    formData.append('amount',       amount);
+    formData.append('start_month',  sMonth);
+    formData.append('start_year',   sYear);
+    formData.append('end_month',    eMonth);
+    formData.append('end_year',     eYear);
+    formData.append('payment_mode', 'online');
+    if (societyId) formData.append('society_id', societyId);
+
+    // Build URL with society_id so route can read it from args
+    const postUrl = societyId
+        ? `/treasurers/collect-maintenance?society_id=${societyId}`
+        : '/treasurers/collect-maintenance';
+
+    fetch(postUrl, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(r => {
+        console.log('Status:', r.status, 'Content-Type:', r.headers.get('content-type'));
+        if (!r.ok || !r.headers.get('content-type')?.includes('application/json')) {
+            return r.text().then(text => {
+                console.error('Non-JSON response:', text.substring(0, 500));
+                throw new Error('Server error. Check Flask terminal.');
+            });
+        }
+        return r.json();
+    })
+    .then(data => {
+        if (data.status !== 'order_created') {
+            alert('Error: ' + (data.message || 'Could not create order'));
+            return;
+        }
+
+        // Open Razorpay modal
+        const options = {
+            key:         data.key,
+            amount:      data.amount,
+            currency:    'INR',
+            name:        'SocietyHQ',
+            description: `Maintenance ${data.start_month} ${data.start_year} → ${data.end_month} ${data.end_year}`,
+            order_id:    data.order_id,
+            prefill:     { name: data.full_name, email: data.email },
+            theme:       { color: '#4f46e5' },
+            handler: function(response) {
+                // Verify payment on backend
+                fetch("/treasurers/verify-collect-payment", {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({
+                        razorpay_order_id:   response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature:  response.razorpay_signature,
+                        flat_id:             data.flat_id,
+                        amount_per_month:    data.amount_per_month,
+                        start_month:         data.start_month,
+                        start_year:          data.start_year,
+                        end_month:           data.end_month,
+                        end_year:            data.end_year,
+                    })
+                })
+                .then(r => r.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        alert('Payment successful! ✅');
+                        window.location.href = '/dashboard';
+                    } else {
+                        alert('Verification failed: ' + result.message);
+                    }
+                });
+            }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+    })
+    .catch(err => alert('Network error: ' + err));
+}
+
+// ── Load occupied flats ──
+function loadFlats(blockId) {
+    const flatSel = document.getElementById('flat-select');
+    flatSel.innerHTML = '<option value="">Loading...</option>';
+    flatSel.disabled = true;
+    hideSummary();
+    document.getElementById('pending-banner').classList.remove('visible');
+
+    if (!blockId) { flatSel.innerHTML = '<option value="">-- Select Flat --</option>'; return; }
+
+    fetch(`/treasurers/get-occupied-flats/${blockId}`)
+        .then(r => r.json())
+        .then(data => {
+            flatSel.innerHTML = '<option value="">-- Select Flat --</option>';
+            (data.flats || []).forEach(f => {
+                const label = f.owner_name || f.tenant_name || 'Occupied';
+                flatSel.innerHTML += `<option value="${f.id}" data-num="${f.flat_number}">${f.flat_number} — ${label}</option>`;
+            });
+            flatSel.disabled = (data.flats || []).length === 0;
+        })
+        .catch(() => { flatSel.innerHTML = '<option value="">Error loading</option>'; });
+}
+
+// ── On flat change: fetch next unpaid ──
+function onFlatChange(sel) {
+    const flatId  = sel.value;
+    const flatNum = sel.options[sel.selectedIndex]?.dataset.num || '';
+    hideSummary();
+    document.getElementById('pending-banner').classList.remove('visible');
+
+    if (!flatId) return;
+
+    document.getElementById('sum-flat').textContent   = `Flat ${flatNum}`;
+    document.getElementById('sum-status').textContent = 'Loading...';
+    document.getElementById('sum-badge').innerHTML    = '';
+    document.getElementById('sum-total').textContent  = '—';
+    document.getElementById('summary-box').classList.add('visible');
+
+    fetch(`/treasurers/get-next-unpaid/${flatId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.month && data.year) {
+                document.getElementById('pending-text').textContent =
+                    `Payment Starts From: ${data.month} ${data.year}`;
+                document.getElementById('pending-banner').classList.add('visible');
+                document.getElementById('sum-status').textContent = `${data.month} ${data.year}`;
+                document.getElementById('sum-badge').innerHTML =
+                    '<span class="status-badge badge-unpaid">Unpaid</span>';
+
+                document.getElementById('start-month').value = data.month;
+                document.getElementById('start-year').value  = data.year;
+                document.getElementById('end-month').value   = data.month;
+                document.getElementById('end-year').value    = data.year;
+
+                if (data.amount) document.getElementById('amount-input').value = data.amount;
+                recalcTotal();
+            } else {
+                document.getElementById('pending-text').textContent = '✅ All dues cleared for this flat';
+                document.getElementById('pending-banner').classList.add('visible');
+                document.getElementById('sum-status').textContent = 'All dues cleared';
+                document.getElementById('sum-badge').innerHTML =
+                    '<span class="status-badge badge-paid">Up to date</span>';
+            }
+        })
+        .catch(() => { document.getElementById('sum-status').textContent = 'Could not fetch status'; });
+}
+
+// ── Live total calculation ──
+function recalcTotal() {
+    const amount = parseFloat(document.getElementById('amount-input').value) || 0;
+    const sMonth = document.getElementById('start-month').value;
+    const sYear  = parseInt(document.getElementById('start-year').value)  || 0;
+    const eMonth = document.getElementById('end-month').value;
+    const eYear  = parseInt(document.getElementById('end-year').value)    || 0;
+
+    if (!sMonth || !eMonth || !sYear || !eYear) return;
+
+    const startNum = sYear * 12 + MONTH_NUM[sMonth];
+    const endNum   = eYear * 12 + MONTH_NUM[eMonth];
+    const months   = Math.max(1, endNum - startNum + 1);
+    const total    = amount * months;
+
+    document.getElementById('sum-total').textContent =
+        amount > 0 && endNum >= startNum
+            ? `₹${total.toLocaleString('en-IN')} (${months} × ₹${amount.toLocaleString('en-IN')})`
+            : '—';
+}
+
+function hideSummary() {
+    document.getElementById('summary-box').classList.remove('visible');
+    document.getElementById('sum-total').textContent = '—';
+}
+</script>
+
 {% endblock %}

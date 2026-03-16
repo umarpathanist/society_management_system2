@@ -3,12 +3,13 @@
 
 {% block content %}
 <style>
-    /* Unique Society List Styling */
     .society-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 40px;
+        flex-wrap: wrap;
+        gap: 15px;
     }
 
     .society-card-row {
@@ -41,6 +42,7 @@
         color: white;
         width: 45px;
         height: 45px;
+        min-width: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -104,11 +106,11 @@
         font-weight: 600;
     }
 
-    /* Modern Buttons */
     .action-group {
         display: flex;
         justify-content: flex-end;
         gap: 10px;
+        flex-wrap: wrap;
     }
 
     .btn-action {
@@ -120,6 +122,7 @@
         transition: all 0.2s;
         border: none;
         cursor: pointer;
+        white-space: nowrap;
     }
 
     .btn-view { background: #eef2ff; color: #4338ca; }
@@ -141,6 +144,88 @@
         text-transform: uppercase;
         letter-spacing: 1px;
     }
+
+    /* ── Tablet (≤ 900px): collapse counts, shrink treasurer ── */
+    @media (max-width: 900px) {
+        .society-card-row,
+        .table-head-labels {
+            grid-template-columns: 2fr 1.5fr auto auto 1fr;
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+
+        .btn-action {
+            padding: 7px 12px;
+            font-size: 12px;
+        }
+    }
+
+    /* ── Mobile (≤ 640px): stack everything as a card ── */
+    @media (max-width: 640px) {
+        .table-head-labels {
+            display: none;
+        }
+
+        .society-card-row {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 14px;
+            padding: 18px 18px;
+            border-radius: 16px;
+        }
+
+        /* Disable the slide animation on mobile – feels odd on flex */
+        .society-card-row:hover {
+            transform: none;
+        }
+
+        /* Row 1 – identity + counts side-by-side */
+        .society-row-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        /* Row 2 – treasurer full-width */
+        .treasurer-pill {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Row 3 – actions full-width, spread evenly */
+        .action-group {
+            justify-content: stretch;
+        }
+
+        .action-group .btn-action,
+        .action-group form {
+            flex: 1;
+        }
+
+        .action-group form .btn-action {
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Counts inline */
+        .mobile-counts {
+            display: flex;
+            gap: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Hide individual count cells; we'll show .mobile-counts instead */
+        .count-badge { display: none; }
+    }
+
+    /* Show .society-row-top wrapper only on mobile */
+    .society-row-top { display: contents; }
+
+    @media (max-width: 640px) {
+        .society-row-top { display: flex; }
+    }
 </style>
 
 <div class="society-header">
@@ -155,7 +240,7 @@
     {% endif %}
 </div>
 
-<!-- Custom Table Head -->
+<!-- Desktop / Tablet column headers -->
 <div class="table-head-labels">
     <div>Society Identity</div>
     <div>Financial Officer</div>
@@ -166,12 +251,27 @@
 
 {% for society in societies %}
 <div class="society-card-row">
-    <!-- 1. Identity -->
-    <div class="society-info">
-        <div class="building-icon">🏙️</div>
-        <div>
-            <div class="society-title">{{ society.name }}</div>
-            <!-- <div class="society-subtitle">ID: #{{ society.id }}</div> -->
+
+    <!-- ── Top row on mobile: identity + counts ── -->
+    <div class="society-row-top">
+        <!-- 1. Identity -->
+        <div class="society-info">
+            <div class="building-icon">🏙️</div>
+            <div>
+                <div class="society-title">{{ society.name }}</div>
+            </div>
+        </div>
+
+        <!-- Mobile-only inline counts -->
+        <div class="mobile-counts">
+            <div class="count-badge" style="display: block;">
+                <span class="count-value" style="color: #6366f1;">{{ society.blocks or 0 }}</span>
+                <span class="count-label">Blocks</span>
+            </div>
+            <div class="count-badge" style="display: block;">
+                <span class="count-value" style="color: #10b981;">{{ society.flats or 0 }}</span>
+                <span class="count-label">Units</span>
+            </div>
         </div>
     </div>
 
@@ -192,13 +292,13 @@
         {% endif %}
     </div>
 
-    <!-- 3. Blocks Count -->
+    <!-- 3. Blocks Count (desktop/tablet only) -->
     <div class="count-badge">
         <span class="count-value" style="color: #6366f1;">{{ society.blocks or 0 }}</span>
         <span class="count-label">Blocks</span>
     </div>
 
-    <!-- 4. Flats Count -->
+    <!-- 4. Flats Count (desktop/tablet only) -->
     <div class="count-badge">
         <span class="count-value" style="color: #10b981;">{{ society.flats or 0 }}</span>
         <span class="count-label">Units</span>

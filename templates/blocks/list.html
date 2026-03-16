@@ -3,12 +3,19 @@
 
 {% block content %}
 <style>
-    /* Unique Block Module Styling */
     .blocks-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 40px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .blocks-header-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .block-card-row {
@@ -41,6 +48,7 @@
         color: white;
         width: 50px;
         height: 50px;
+        min-width: 50px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -64,7 +72,6 @@
         margin-top: 2px;
     }
 
-    /* Stats Pill */
     .floor-pill {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -78,11 +85,11 @@
         font-size: 14px;
     }
 
-    /* Action Center */
     .action-center {
         display: flex;
         justify-content: flex-end;
         gap: 12px;
+        flex-wrap: wrap;
     }
 
     .btn-block-action {
@@ -97,13 +104,14 @@
         gap: 6px;
         border: none;
         cursor: pointer;
+        white-space: nowrap;
     }
 
-    .btn-view-flats { background: #4e46e5; color: white; box-shadow: 0 4px 10px rgba(78, 70, 229, 0.2); }
-    .btn-view-flats:hover { background: #4338ca; transform: scale(1.05); }
+    .btn-view-flats  { background: #4e46e5; color: white; box-shadow: 0 4px 10px rgba(78,70,229,0.2); }
+    .btn-view-flats:hover  { background: #4338ca; transform: scale(1.05); }
 
-    .btn-edit-block { background: #f1f5f9; color: #475569; }
-    .btn-edit-block:hover { background: #e2e8f0; color: #1e293b; }
+    .btn-edit-block  { background: #f1f5f9; color: #475569; }
+    .btn-edit-block:hover  { background: #e2e8f0; color: #1e293b; }
 
     .btn-delete-block { background: #fff1f2; color: #e11d48; }
     .btn-delete-block:hover { background: #fb7185; color: white; }
@@ -118,6 +126,77 @@
         text-transform: uppercase;
         letter-spacing: 1.5px;
     }
+
+    /* Mobile section label */
+    .mobile-label {
+        display: none;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94a3b8;
+        margin-bottom: 6px;
+    }
+
+    /* ── Tablet (≤ 780px): tighten grid ── */
+    @media (max-width: 780px) {
+        .block-card-row,
+        .grid-header {
+            grid-template-columns: 2fr auto 1.5fr;
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+
+        .btn-block-action {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+    }
+
+    /* ── Mobile (≤ 600px): full card stack ── */
+    @media (max-width: 600px) {
+        .grid-header { display: none; }
+
+        .block-card-row {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 14px;
+            padding: 18px;
+            border-radius: 16px;
+        }
+
+        .block-card-row:hover { transform: none; }
+
+        /* Top row: identity left, floors right */
+        .block-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Actions stretch full width */
+        .action-center {
+            justify-content: stretch;
+        }
+
+        .action-center .btn-block-action,
+        .action-center form { flex: 1; }
+
+        .action-center form .btn-block-action {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .mobile-label { display: block; }
+    }
+
+    /* block-top-row: contents on desktop, flex on mobile */
+    .block-top-row { display: contents; }
+    @media (max-width: 600px) {
+        .block-top-row { display: flex; }
+    }
 </style>
 
 <div class="blocks-header">
@@ -125,24 +204,24 @@
         <h1 style="margin: 0; font-size: 26px; color: #1e293b;">🏗️ Society Infrastructure</h1>
         <p style="color: #64748b; margin-top: 5px;">Configure blocks and residential units.</p>
     </div>
-    
-    <div style="display: flex; gap: 12px;">
-        <a href="{{ url_for('societies.list_societies') }}" 
-           style="text-decoration: none; color: #64748b; font-weight: 700; font-size: 14px; padding: 12px 20px; background: white; border: 1.5px solid #e2e8f0; border-radius: 14px; transition: 0.2s;"
+
+    <div class="blocks-header-actions">
+        <a href="{{ url_for('societies.list_societies') }}"
+           style="text-decoration: none; color: #64748b; font-weight: 700; font-size: 14px; padding: 12px 20px; background: white; border: 1.5px solid #e2e8f0; border-radius: 14px; transition: 0.2s; white-space: nowrap;"
            onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
            ← Back to Societies
         </a>
 
         {% if session.user.role in ['admin', 'super_admin'] %}
-        <a href="{{ url_for('blocks.add_block', society_id=society_id) }}" 
-           style="background: #4e46e5; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
+        <a href="{{ url_for('blocks.add_block', society_id=society_id) }}"
+           style="background: #4e46e5; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(79,70,229,0.3); white-space: nowrap;">
            + New Block
         </a>
         {% endif %}
     </div>
 </div>
 
-<!-- Header for the grid columns -->
+<!-- Column headers (desktop/tablet) -->
 <div class="grid-header">
     <div>Structural Identity</div>
     <div style="text-align: center;">Capacity</div>
@@ -151,38 +230,42 @@
 
 {% for b in blocks %}
 <div class="block-card-row">
-    <!-- 1. Identity -->
-    <div class="block-identity">
-        <div class="block-avatar">🧱</div>
-        <div>
-            <div class="block-name">{{ b.name }}</div>
-            <!-- <div class="block-meta">INTERNAL ID: #{{ b.id }}</div> -->
+
+    <!-- Mobile top row: identity + floors pill -->
+    <div class="block-top-row">
+        <div class="block-identity">
+            <div class="block-avatar">🧱</div>
+            <div>
+                <div class="block-name">{{ b.name }}</div>
+            </div>
+        </div>
+
+        <!-- Floors (always visible, moves to top-right on mobile) -->
+        <div style="text-align: center;">
+            <div class="floor-pill">
+                <span>📊</span> {{ b.floors }} Floors
+            </div>
         </div>
     </div>
 
-    <!-- 2. Floors Count -->
-    <div style="text-align: center;">
-        <div class="floor-pill">
-            <span>📊</span> {{ b.floors }} Floors
-        </div>
-    </div>
-
-    <!-- 3. Action Center -->
+    <!-- Actions -->
     <div class="action-center">
         <a href="{{ url_for('flats.list_flats', block_id=b.id) }}" class="btn-block-action btn-view-flats">
             <span>🏠</span> View Units
         </a>
-        
+
         {% if session.user.role in ['admin', 'super_admin'] %}
         <a href="{{ url_for('blocks.edit_block', id=b.id) }}" class="btn-block-action btn-edit-block">
             Edit
         </a>
-        
-        <form action="{{ url_for('blocks.delete_block', id=b.id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('WARNING: This will delete all flat data in this block. Continue?')">
+
+        <form action="{{ url_for('blocks.delete_block', id=b.id) }}" method="POST" style="margin: 0;"
+              onsubmit="return confirm('WARNING: This will delete all flat data in this block. Continue?')">
             <button type="submit" class="btn-block-action btn-delete-block">Delete</button>
         </form>
         {% endif %}
     </div>
+
 </div>
 {% else %}
 <div class="card" style="background: white; border-radius: 24px; padding: 80px 20px; text-align: center; border: 2px dashed #e2e8f0;">
