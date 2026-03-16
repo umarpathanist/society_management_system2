@@ -493,6 +493,7 @@
 #             cur.close()
 #             conn.close()
 
+
 from database.connection import get_db_connection
 from psycopg2.extras import RealDictCursor
 
@@ -502,18 +503,27 @@ class FlatRepository:
     # 1. GET BY ID
     # ======================================================
     @staticmethod
-    def get_by_id(flat_id):
-        """Fetches a single flat record with society context."""
+    def get_by_block(block_id):
+        """
+        Fetches ALL flats for a block. 
+        Uses LEFT JOIN so that Vacant flats stay in the list.
+        """
         conn = get_db_connection()
+        from psycopg2.extras import RealDictCursor
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             cur.execute("""
-                SELECT f.*, b.society_id
+                SELECT 
+                    f.id, f.flat_number, f.floor_number, f.is_occupied,
+                    uo.full_name as owner_name, 
+                    ut.full_name as tenant_name
                 FROM flats f
-                JOIN blocks b ON b.id = f.block_id
-                WHERE f.id = %s
-            """, (flat_id,))
-            return cur.fetchone()
+                LEFT JOIN users uo ON f.owner_id = uo.id
+                LEFT JOIN users ut ON f.tenant_id = ut.id
+                WHERE f.block_id = %s
+                ORDER BY f.floor_number ASC, f.flat_number ASC
+            """, (block_id,))
+            return cur.fetchall()
         finally:
             cur.close()
             conn.close()
@@ -604,14 +614,22 @@ class FlatRepository:
 
     @staticmethod
     def unassign_user(flat_id, role):
-        """Removes user from flat."""
+        """Clears the user and resets occupancy status."""
         conn = get_db_connection()
         cur = conn.cursor()
         column = "owner_id" if role == "owner" else "tenant_id"
         try:
+            # 1. Set the column to NULL
             cur.execute(f"UPDATE flats SET {column} = NULL WHERE id = %s", (flat_id,))
+            
+            # 2. If both owner and tenant are now gone, mark unit as Vacant
+            cur.execute("""
+                UPDATE flats 
+                SET is_occupied = FALSE 
+                WHERE id = %s AND owner_id IS NULL AND tenant_id IS NULL
+            """, (flat_id,))
+            
             conn.commit()
-            return True
         finally:
             cur.close()
             conn.close()
@@ -626,6 +644,23 @@ class FlatRepository:
                 cur.execute(query, (f['block_id'], f['flat_number'], f['floor_number']))
             conn.commit()
             return True
+        finally:
+            cur.close()
+            conn.close()
+
+    @staticmethod
+    def get_by_id(flat_id):
+        """Fetches a single flat record with block and society context."""
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)  # ✅ RealDictCursor
+        try:
+            cur.execute("""
+                SELECT f.*, b.society_id
+                FROM flats f
+                JOIN blocks b ON b.id = f.block_id
+                WHERE f.id = %s
+            """, (flat_id,))
+            return cur.fetchone()
         finally:
             cur.close()
             conn.close()

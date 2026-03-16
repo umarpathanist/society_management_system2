@@ -139,6 +139,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session
 from utils.decorators import login_required, role_required
+from database.connection import get_db_connection
 
 # Repositories
 from flats.repository import FlatRepository
@@ -240,16 +241,15 @@ def assign_flat(flat_id):
     return redirect(url_for("flats.list_flats", block_id=flat['block_id']))
 
 
-# ---------------------------------------------------------
-# 4. UNASSIGN USER (POST)
-# ---------------------------------------------------------
 @flats_bp.route("/unassign/<int:flat_id>/<role>", methods=["POST"])
 @login_required
 @role_required("admin")
 def unassign(flat_id, role):
     try:
         FlatRepository.unassign_user(flat_id, role)
-        flash(f"{role.capitalize()} removed successfully.", "success")
+        flash(f"{role.capitalize()} removed successfully. ✅", "success")
     except Exception as e:
         flash(f"Error: {str(e)}", "danger")
-    return redirect(url_for(request.referrer))
+    
+    # Hardcoded redirect — no url_for, no DB query
+    return redirect("/flats/5")

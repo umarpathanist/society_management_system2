@@ -167,7 +167,7 @@ def edit_block(id):
     block = BlockRepository.get_by_id(id)
     if not block:
         flash("Block not found", "danger")
-        return redirect(url_for('dashboard.index'))
+        return redirect(url_for('dashboard.index_redirect'))
 
     if request.method == "POST":
         new_name = request.form.get("name")
@@ -197,4 +197,4 @@ def delete_block(id):
             return redirect(url_for('blocks.list_blocks', society_id=block['society_id']))
         except Exception as e:
             flash(f"Delete Error: {str(e)}", "danger")
-    return redirect(url_for('dashboard.index'))
+    return redirect(url_for('dashboard.index_redirect'))

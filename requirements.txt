@@ -5,3 +5,7 @@ psycopg2-binary
 python-dotenv
 gunicorn
 xhtml2pdf
+playwright
+pytest
+pytest-asyncio
+httpx

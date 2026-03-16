@@ -86,9 +86,9 @@
     </div>
 
     <div style="display: flex; gap: 12px; align-items: center;">
-        {% if session.user.role == 'super_admin' %}
+        <!-- {% if session.user.role == 'super_admin' %}
             <a href="{{ url_for('societies.list_societies') }}" class="btn-back">← Societies</a>
-        {% endif %}
+        {% endif %} -->
         
         {% if session.user.role == 'super_admin' %}
             {% if selected_soc %}

@@ -122,7 +122,7 @@
 #                                                              request.form.get("year"), 
 #                                                              request.form.get("due_date"))
 #                 flash(f"Bills generated for {len(flat_ids)} units! ✅", "success")
-#                 return redirect(url_for("dashboard.index"))
+#                 return redirect(url_for("dashboard.index_redirect"))
 #             except Exception as e:
 #                 flash(f"Error: {str(e)}", "danger")
 
@@ -142,7 +142,7 @@
 #                 for m in unpaid_members:
 #                     send_maintenance_reminder(m['email'], m['full_name'], m['amount'], m['month'], m['year'])
 #                 flash(f"Manual reminders sent to {len(unpaid_members)} residents! 📩", "info")
-#                 return redirect(url_for("dashboard.index"))
+#                 return redirect(url_for("dashboard.index_redirect"))
 #             except Exception as e:
 #                 flash(f"Mailing Error: {str(e)}", "danger")
 #             finally:
@@ -242,7 +242,7 @@
 #                 curr += relativedelta(months=1)
 
 #             flash("Advance payment processed successfully! ✅", "success")
-#             return redirect(url_for("dashboard.index"))
+#             return redirect(url_for("dashboard.index_redirect"))
             
 #         except Exception as e:
 #             flash(f"Payment Failed: {str(e)}", "danger")
@@ -443,7 +443,7 @@ def collect_maintenance():
                 curr += relativedelta(months=1)
                 count += 1
             flash(f"Advance payment for {count} months successful! ✅", "success")
-            return redirect(url_for("dashboard.index"))
+            return redirect(url_for("dashboard.index_redirect"))
         except Exception as e:
             flash(f"Error: {str(e)}", "danger")
             return redirect(url_for("treasurers.collect_maintenance", society_id=selected_soc_id))
@@ -705,7 +705,7 @@ from datetime import datetime
 #                 else:
 #                     flash("Everyone has paid! No reminders needed. ✨", "success")
 
-#             return redirect(url_for("dashboard.index"))
+#             return redirect(url_for("dashboard.index_redirect"))
 
 #         except Exception as e:
 #             print(f"SYSTEM ERROR: {e}")
@@ -847,7 +847,7 @@ def generate_maintenance():
                 
                 flash(f"Sent {len(pending_users)} reminders to members with pending dues! 📩", "info")
 
-            return redirect(url_for("dashboard.index"))
+            return redirect(url_for("dashboard.index_redirect"))
 
         except Exception as e:
             flash(f"Process failed: {str(e)}", "danger")

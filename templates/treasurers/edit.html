@@ -2,50 +2,145 @@
 {% block title %}Edit Treasurer{% endblock %}
 
 {% block content %}
-<!-- 1. Added Back to List Button at the top -->
-<div style="margin-bottom: 20px;">
-    <a href="{{ url_for('admin.list_admins') }}" 
-       style="text-decoration: none; color: #64748b; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: color 0.2s;"
-       onmouseover="this.style.color='#4e46e5'" 
-       onmouseout="this.style.color='#64748b'">
-        <span style="font-size: 18px;">←</span> Back to List
+<style>
+    .form-page-wrap {
+        max-width: 620px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 16px;
+        box-sizing: border-box;
+    }
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 20px;
+        transition: color 0.2s;
+    }
+    .back-link:hover { color: #4e46e5; }
+    .page-header h1 {
+        margin: 0 0 20px 0;
+        font-size: 26px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        color: #374151;
+    }
+    .form-control {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 15px;
+        box-sizing: border-box;
+        outline: none;
+        background: white;
+        transition: border-color 0.2s;
+    }
+    .form-control:focus {
+        border-color: #4e46e5;
+        box-shadow: 0 0 0 3px rgba(78,70,229,0.1);
+    }
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 25px;
+    }
+    .btn-update {
+        background: #4e46e5;
+        color: white;
+        border: none;
+        padding: 12px 28px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 15px;
+        transition: background 0.2s;
+    }
+    .btn-update:hover { background: #4338ca; }
+    .btn-cancel {
+        color: #6b7280;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 15px;
+        padding: 12px 0;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+        .form-card { padding: 20px 16px; }
+        .page-header h1 { font-size: 20px; }
+        .form-actions { flex-direction: column; align-items: stretch; }
+        .btn-update { text-align: center; }
+        .btn-cancel { text-align: center; }
+    }
+</style>
+
+<div class="form-page-wrap">
+
+    <a href="{{ url_for('admin.list_admins') }}" class="back-link">
+        <span style="font-size:18px;">←</span> Back to List
     </a>
-</div>
 
-<div class="page-header" style="margin-bottom: 25px;">
-    <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1f2937;">📝 Edit Treasurer</h1>
-</div>
+    <div class="page-header">
+        <h1>📝 Edit Treasurer</h1>
+    </div>
 
-<div class="card" style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 600px;">
-    <form method="POST">
-        <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Full Name</label>
-            <input type="text" name="full_name" value="{{ treasurer.full_name }}" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; outline: none;">
-        </div>
+    <div class="form-card">
+        <form method="POST">
 
-        <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Email Address</label>
-            <input type="email" name="email" value="{{ treasurer.email }}" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; outline: none;">
-        </div>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="full_name" value="{{ treasurer.full_name }}" required class="form-control">
+            </div>
 
-        <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: 500;">New Password (leave blank to keep current)</label>
-            <input type="password" name="password" autocomplete="new-password" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; outline: none;">
-        </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" value="{{ treasurer.email }}" required class="form-control">
+            </div>
 
-        <div style="margin-bottom: 25px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Society</label>
-            <select name="society_id" required style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; background: white; outline: none;">
-                {% for s in societies %}
-                    <option value="{{ s.id }}" {% if s.id == treasurer.society_id %}selected{% endif %}>{{ s.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
+            <div class="form-group">
+                <label>New Password <span style="color:#9ca3af; font-weight:400;">(leave blank to keep current)</span></label>
+                <input type="password" name="password" autocomplete="new-password" class="form-control">
+            </div>
 
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <button type="submit" style="background: #4e46e5; color: white; border: none; padding: 12px 28px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s;">Update</button>
-            <a href="{{ url_for('treasurers.list') }}" style="color: #6b7280; text-decoration: none; font-weight: 500;">Cancel</a>
-        </div>
-    </form>
+            <div class="form-group">
+                <label>Society</label>
+                <select name="society_id" required class="form-control">
+                    {% for s in societies %}
+                        <option value="{{ s.id }}" {% if s.id == treasurer.society_id %}selected{% endif %}>
+                            {{ s.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-update">Update</button>
+                <a href="{{ url_for('treasurers.list') }}" class="btn-cancel">Cancel</a>
+            </div>
+
+        </form>
+    </div>
 </div>
 {% endblock %}

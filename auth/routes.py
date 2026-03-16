@@ -6,27 +6,45 @@ from utils.decorators import login_required
 
 auth_bp = Blueprint("auth", __name__)
 
+# def redirect_user_by_role(role):
+#     """
+#     Centralized helper function to handle landing pages for all roles.
+#     This fixes the 403 error by ensuring Treasurers go to the Dashboard.
+#     """
+#     if not role:
+#         return redirect(url_for("auth.login"))
+    
+#     role = role.lower()
+    
+#     # 1. Management Roles (Super Admin, Admin, Treasurer) -> Dashboard
+#     if role in ["super_admin", "admin", "treasurer"]:
+#         return redirect(url_for("dashboard.index_redirect"))
+    
+#     # 2. Resident Roles (Owner, Tenant) -> My Flat Page
+#     elif role in ["owner", "tenant"]:
+#         return redirect(url_for("owners.my_flat"))
+    
+#     # 3. Default Fallback
+#     return redirect(url_for("dashboard.index_redirect"))
+
+# def redirect_user_by_role(role):
+#     role = role.lower()
+#     if role == "super_admin":
+#         return redirect(url_for("dashboard.superadmin_index"))
+#     elif role == "admin":
+#         return redirect(url_for("dashboard.admin_index"))
+#     elif role == "treasurer":
+#         return redirect(url_for("dashboard.treasurer_index"))
+#     else:
+#         return redirect(url_for("dashboard.resident_index"))
+
+# Inside auth/routes.py
 def redirect_user_by_role(role):
     """
-    Centralized helper function to handle landing pages for all roles.
-    This fixes the 403 error by ensuring Treasurers go to the Dashboard.
+    Directs everyone to the Dashboard Hub.
+    The Hub will then decide which specific URL to show.
     """
-    if not role:
-        return redirect(url_for("auth.login"))
-    
-    role = role.lower()
-    
-    # 1. Management Roles (Super Admin, Admin, Treasurer) -> Dashboard
-    if role in ["super_admin", "admin", "treasurer"]:
-        return redirect(url_for("dashboard.index"))
-    
-    # 2. Resident Roles (Owner, Tenant) -> My Flat Page
-    elif role in ["owner", "tenant"]:
-        return redirect(url_for("owners.my_flat"))
-    
-    # 3. Default Fallback
-    return redirect(url_for("dashboard.index"))
-
+    return redirect(url_for("dashboard.index_redirect"))
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -101,7 +119,7 @@ def change_password():
         UserRepository.update_password(user_id, hashed)
         
         flash("Password updated successfully! ✅", "success")
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("dashboard.index_redirect"))
 
     return render_template("auth/change_password.html")
 

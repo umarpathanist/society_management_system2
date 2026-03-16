@@ -3,114 +3,186 @@
 
 {% block content %}
 <style>
-    /* 1. Typography & Global Spacing */
-    .command-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
-    .command-header p { color: #64748b; font-size: 15px; margin-top: 5px; }
+    /* ── Typography & Base ── */
+    .command-header h1 {
+        font-size: 26px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+    .command-header p { color: #64748b; font-size: 15px; margin-top: 5px; margin-bottom: 0; }
 
-    /* 2. Unified Card Styling */
+    /* ── Card ── */
     .glass-card {
         background: white;
-        border-radius: 28px;
+        border-radius: 24px;
         border: 1px solid #f1f5f9;
-        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-        transition: transform 0.3s ease;
+        box-shadow: 0 10px 30px -5px rgba(0,0,0,0.04), 0 4px 6px -2px rgba(0,0,0,0.02);
     }
 
-    /* 3. Input Styling */
+    /* ── Form Inputs ── */
     .form-group label {
         display: block;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
         color: #475569;
         margin-bottom: 10px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-
     .modern-input {
         width: 100%;
-        padding: 14px 18px;
+        padding: 13px 16px;
         background: #f8fafc;
         border: 2px solid #f1f5f9;
-        border-radius: 16px;
+        border-radius: 14px;
         font-size: 15px;
         color: #1e293b;
         outline: none;
-        transition: all 0.2s ease;
+        transition: all 0.2s;
         box-sizing: border-box;
     }
-
     .modern-input:focus {
         background: white;
         border-color: #4e46e5;
-        box-shadow: 0 0 0 4px rgba(78, 70, 229, 0.1);
+        box-shadow: 0 0 0 4px rgba(78,70,229,0.1);
     }
 
-    /* 4. Buttons */
+    /* ── Buttons ── */
     .btn-generate {
         width: 100%;
         background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
         color: white;
         padding: 16px;
         border: none;
-        border-radius: 18px;
+        border-radius: 16px;
         font-weight: 700;
         font-size: 16px;
         cursor: pointer;
-        box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
-        transition: all 0.3s ease;
+        box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);
+        transition: all 0.3s;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 10px;
     }
-    .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.5); }
-
+    .btn-generate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 25px -5px rgba(79,70,229,0.5);
+    }
     .btn-remind {
         width: 100%;
-        background: #6366f1 0%;
+        background: #6366f1;
         color: white;
-        border: 2px solid #eef2ff;
+        border: none;
         padding: 14px;
-        border-radius: 16px;
+        border-radius: 14px;
         font-weight: 700;
+        font-size: 14px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.2s;
     }
-    .btn-remind:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.5); }
+    .btn-remind:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);
+    }
 
-    /* 5. Status Indicators */
-    .status-dot { height: 8px; width: 8px; background: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #10b981; }
+    /* ── Status dot ── */
+    .status-dot {
+        height: 8px; width: 8px;
+        background: #10b981;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 10px #10b981;
+    }
+
+    /* ── Page header ── */
+    .cmd-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 35px;
+    }
+    .btn-collect {
+        background: #10b981;
+        color: white;
+        padding: 12px 22px;
+        border-radius: 14px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(16,185,129,0.2);
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .btn-collect:hover { background: #059669; }
+
+    /* ── Two-column grid ── */
+    .main-grid {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 30px;
+        align-items: start;
+    }
+    .month-year-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+    .sidebar-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+        .main-grid { grid-template-columns: 1fr; }
+        .sidebar-stack { flex-direction: column; }
+    }
+    @media (max-width: 540px) {
+        .month-year-grid { grid-template-columns: 1fr; }
+        .glass-card { border-radius: 18px; }
+        .cmd-top { flex-direction: column; align-items: flex-start; }
+        .btn-collect { width: 100%; justify-content: center; }
+        .command-header h1 { font-size: 22px; }
+        .btn-generate { font-size: 14px; padding: 14px; }
+    }
 </style>
 
-<div class="command-header" style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-end;">
+<!-- Top Header -->
+<div class="cmd-top command-header">
     <div>
         <h1>🏗️ Maintenance Command</h1>
         <p>Billing control and resident notification hub.</p>
     </div>
-    
-    <a href="{{ url_for('treasurers.collect_maintenance') }}" 
-       style="background: #10b981; color: white; padding: 12px 24px; border-radius: 16px; text-decoration: none; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
+    <a href="{{ url_for('treasurers.collect_maintenance') }}" class="btn-collect">
         <span>💰</span> Collect Maintenance
-
-
     </a>
 </div>
 
-<div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 35px;">
-    
-    <!-- MAIN BILLING FORM -->
-    <div class="glass-card" style="padding: 45px;">
-        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 35px;">
-            <div style="background: #eef2ff; width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px;">🧾</div>
-            <h3 style="margin: 0; font-size: 20px; color: #1e293b;">Billing Cycle Configuration</h3>
+<!-- Main 2-column grid -->
+<div class="main-grid">
+
+    <!-- LEFT: Billing Form -->
+    <div class="glass-card" style="padding: 35px;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 30px;">
+            <div style="background: #eef2ff; width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">🧾</div>
+            <h3 style="margin: 0; font-size: 18px; color: #1e293b;">Billing Cycle Configuration</h3>
         </div>
 
         <form method="POST">
             <input type="hidden" name="action" value="generate">
-            
+
             {% if session.user.role == 'super_admin' %}
-            <div class="form-group" style="margin-bottom: 25px;">
+            <div class="form-group" style="margin-bottom: 22px;">
                 <label>Select Society</label>
                 <select name="society_id" class="modern-input" required>
                     <option value="">-- Choose Society to Bill --</option>
@@ -121,16 +193,16 @@
             </div>
             {% endif %}
 
-            <div class="form-group" style="margin-bottom: 25px;">
+            <div class="form-group" style="margin-bottom: 22px;">
                 <label>Monthly Maintenance Amount (₹)</label>
                 <input type="number" name="amount" class="modern-input" required placeholder="e.g. 2500">
             </div>
 
-            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 25px;">
+            <div class="month-year-grid">
                 <div class="form-group">
                     <label>Month</label>
                     <select name="month" class="modern-input" required>
-                        {% for m in ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] %}
+                        {% for m in ["January","February","March","April","May","June","July","August","September","October","November","December"] %}
                             <option value="{{ m }}">{{ m }}</option>
                         {% endfor %}
                     </select>
@@ -141,52 +213,53 @@
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 40px;">
+            <div class="form-group" style="margin-bottom: 35px;">
                 <label>Final Payment Due Date</label>
                 <input type="date" name="due_date" class="modern-input" required>
             </div>
 
             <button type="submit" class="btn-generate">
-                <span>🚀</span> Generate & Notify All Residents
+                <span>🚀</span> Generate &amp; Notify All Residents
             </button>
 
-            <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">
-                ℹ️ Automated logic ensures bills are only created for <strong>Occupied</strong> units.
+            <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 18px;">
+                ℹ️ Bills are only created for <strong>Occupied</strong> units.
             </p>
         </form>
     </div>
 
-    <!-- SYSTEM STATUS & REMINDERS -->
-    <div style="display: flex; flex-direction: column; gap: 25px;">
-        
-        <!-- Automation Status -->
-        <div class="glass-card" style="background: #0f172a; color: white; padding: 30px; border: none;">
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                <span style="font-size: 28px;">🤖</span>
-                <h4 style="margin: 0; font-size: 17px; font-weight: 700;">System Intelligence</h4>
+    <!-- RIGHT: Sidebar -->
+    <div class="sidebar-stack">
+
+        <!-- System Intelligence -->
+        <div class="glass-card" style="background: #0f172a; color: white; padding: 28px; border: none;">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
+                <span style="font-size: 26px;">🤖</span>
+                <h4 style="margin: 0; font-size: 16px; font-weight: 700;">System Intelligence</h4>
             </div>
             <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin: 0;">
                 The core engine generates monthly cycles and dispatches email notifications on the <strong>1st of every month</strong>.
             </p>
-            <div style="margin-top: 20px; font-size: 12px; color: #10b981; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+            <div style="margin-top: 18px; font-size: 12px; color: #10b981; font-weight: 800; display: flex; align-items: center; gap: 8px;">
                 <span class="status-dot"></span> SYSTEM CLOCK: ACTIVE
             </div>
         </div>
 
-        <!-- Quick Reminders -->
-        <div class="glass-card" style="padding: 30px;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+        <!-- Bulk Reminders -->
+        <div class="glass-card" style="padding: 28px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 22px;">🔔</span>
-                <h4 style="margin: 0; font-size: 17px; color: #1e293b;">Bulk Reminders</h4>
+                <h4 style="margin: 0; font-size: 16px; color: #1e293b;">Bulk Reminders</h4>
             </div>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 25px; line-height: 1.5;">
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 22px; line-height: 1.5;">
                 Send a manual nudge to residents who haven't paid their current month's bills.
             </p>
-            
+
             <form method="POST">
                 <input type="hidden" name="action" value="remind">
                 {% if session.user.role == 'super_admin' %}
-                    <select name="society_id" required class="modern-input" style="font-size: 13px; margin-bottom: 15px; padding: 10px;">
+                    <select name="society_id" required class="modern-input"
+                            style="font-size: 13px; margin-bottom: 14px; padding: 10px 14px;">
                         <option value="">-- Choose Society --</option>
                         {% for s in societies %}
                             <option value="{{ s.id }}">{{ s.name }}</option>
@@ -195,7 +268,10 @@
                 {% endif %}
                 <button type="submit" class="btn-remind">Send "Unpaid" Alerts</button>
             </form>
-            <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 15px;">*Only targets members with Unpaid status.</p>
+
+            <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 14px;">
+                * Only targets members with Unpaid status.
+            </p>
         </div>
 
     </div>

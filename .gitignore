@@ -42,3 +42,10 @@ Society_Management_System_BRD.pdf
 # Migrations cache
 database/migrations/
 database/connection.py/
+
+# Tests
+tests/
+
+
+# Excel test reports
+*.xlsx

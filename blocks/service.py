@@ -33,7 +33,7 @@ class BlockService:
         if not society:
             abort(404, "Society not found")
 
-        blocks = BlockRepository.get_blocks_by_society(society_id)
+        blocks = BlockRepository.get_by_society(society_id)
         return society, blocks
 
 

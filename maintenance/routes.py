@@ -43,7 +43,7 @@ def download_invoice(m_id):
     
     if not invoice_data:
         flash("Invoice record not found.", "danger")
-        return redirect(request.referrer or url_for('dashboard.index'))
+        return redirect(request.referrer or url_for('dashboard.index_redirect'))
 
     # 2. FIX: Structure the context so 'society', 'user', etc. are defined
     # This solves the 'society is undefined' error
@@ -53,8 +53,8 @@ def download_invoice(m_id):
             "address": invoice_data['society_address']
         },
         "user": {
-            "full_name": invoice_data['owner_name'],
-            "email": invoice_data['owner_email']
+            "full_name": invoice_data['recipient_name'],
+            "email": invoice_data['recipient_email']
         },
         "flat": {
             "flat_number": invoice_data['flat_number'],

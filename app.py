@@ -75,7 +75,17 @@ def create_app():
 
     # --- SCHEDULER SETUP ---
     scheduler.init_app(app)
-    scheduler.start()
+    
+    # Only start scheduler if not in testing mode
+    if not app.config.get('TESTING', False):
+        scheduler.start()
+    else:
+        # For testing, try to shut down any existing scheduler
+        try:
+            if scheduler.running:
+                scheduler.shutdown(wait=False)
+        except:
+            pass
 
     # Define Automated Tasks inside create_app so they have access to 'app'
     # 1. Monthly Maintenance Job
