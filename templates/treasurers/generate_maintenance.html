@@ -3,7 +3,6 @@
 
 {% block content %}
 <style>
-    /* ── Typography & Base ── */
     .command-header h1 {
         font-size: 26px;
         font-weight: 800;
@@ -13,7 +12,6 @@
     }
     .command-header p { color: #64748b; font-size: 15px; margin-top: 5px; margin-bottom: 0; }
 
-    /* ── Card ── */
     .glass-card {
         background: white;
         border-radius: 24px;
@@ -21,7 +19,6 @@
         box-shadow: 0 10px 30px -5px rgba(0,0,0,0.04), 0 4px 6px -2px rgba(0,0,0,0.02);
     }
 
-    /* ── Form Inputs ── */
     .form-group label {
         display: block;
         font-size: 12px;
@@ -49,7 +46,19 @@
         box-shadow: 0 0 0 4px rgba(78,70,229,0.1);
     }
 
-    /* ── Buttons ── */
+    /* Locked field styling */
+    .field-locked {
+        opacity: 0.4;
+        pointer-events: none;
+        user-select: none;
+    }
+    .field-locked .modern-input,
+    .field-locked input,
+    .field-locked select {
+        background: #f1f5f9 !important;
+        cursor: not-allowed !important;
+    }
+
     .btn-generate {
         width: 100%;
         background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
@@ -67,10 +76,14 @@
         justify-content: center;
         gap: 10px;
     }
-    .btn-generate:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 15px 25px -5px rgba(79,70,229,0.5);
+    .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(79,70,229,0.5); }
+    .btn-generate:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
     }
+
     .btn-remind {
         width: 100%;
         background: #6366f1;
@@ -83,12 +96,8 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    .btn-remind:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);
-    }
+    .btn-remind:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4); }
 
-    /* ── Status dot ── */
     .status-dot {
         height: 8px; width: 8px;
         background: #10b981;
@@ -97,7 +106,6 @@
         box-shadow: 0 0 10px #10b981;
     }
 
-    /* ── Page header ── */
     .cmd-top {
         display: flex;
         justify-content: space-between;
@@ -123,7 +131,6 @@
     }
     .btn-collect:hover { background: #059669; }
 
-    /* ── Two-column grid ── */
     .main-grid {
         display: grid;
         grid-template-columns: 1.6fr 1fr;
@@ -142,10 +149,8 @@
         gap: 22px;
     }
 
-    /* ── Responsive ── */
     @media (max-width: 900px) {
         .main-grid { grid-template-columns: 1fr; }
-        .sidebar-stack { flex-direction: column; }
     }
     @media (max-width: 540px) {
         .month-year-grid { grid-template-columns: 1fr; }
@@ -178,7 +183,7 @@
             <h3 style="margin: 0; font-size: 18px; color: #1e293b;">Billing Cycle Configuration</h3>
         </div>
 
-        <form method="POST">
+        <form method="POST" id="generate-form">
             <input type="hidden" name="action" value="generate">
 
             {% if session.user.role == 'super_admin' %}
@@ -193,12 +198,16 @@
             </div>
             {% endif %}
 
+            <!-- Amount — unlocks everything below when filled -->
             <div class="form-group" style="margin-bottom: 22px;">
                 <label>Monthly Maintenance Amount (₹)</label>
-                <input type="number" name="amount" class="modern-input" required placeholder="e.g. 2500">
+                <input type="number" name="amount" id="amount-input" class="modern-input"
+                       required placeholder="e.g. 2500"
+                       oninput="onAmountInput(this)">
             </div>
 
-            <div class="month-year-grid">
+            <!-- Month + Year — locked until amount entered -->
+            <div class="month-year-grid field-locked" id="month-year-group">
                 <div class="form-group">
                     <label>Month</label>
                     <select name="month" class="modern-input" required>
@@ -209,16 +218,17 @@
                 </div>
                 <div class="form-group">
                     <label>Year</label>
-                    <input type="number" name="year" class="modern-input" value="2024" required>
+                    <input type="number" name="year" class="modern-input" value="{{ now.year if now else 2026 }}" required>
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 35px;">
+            <!-- Due date — locked until amount entered -->
+            <div class="form-group field-locked" id="due-date-group" style="margin-bottom: 35px;">
                 <label>Final Payment Due Date</label>
                 <input type="date" name="due_date" class="modern-input" required>
             </div>
 
-            <button type="submit" class="btn-generate">
+            <button type="submit" class="btn-generate" id="btn-generate" disabled>
                 <span>🚀</span> Generate &amp; Notify All Residents
             </button>
 
@@ -276,4 +286,24 @@
 
     </div>
 </div>
+
+<script>
+function onAmountInput(input) {
+    const hasAmount = input.value && parseFloat(input.value) > 0;
+
+    // Unlock/lock month-year and due date groups
+    ['month-year-group', 'due-date-group'].forEach(id => {
+        const el = document.getElementById(id);
+        if (hasAmount) {
+            el.classList.remove('field-locked');
+        } else {
+            el.classList.add('field-locked');
+        }
+    });
+
+    // Enable/disable generate button
+    document.getElementById('btn-generate').disabled = !hasAmount;
+}
+</script>
+
 {% endblock %}

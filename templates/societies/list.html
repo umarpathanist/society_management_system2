@@ -85,26 +85,11 @@
         text-decoration: none;
         transition: all 0.2s;
     }
-    .unassigned:hover {
-        border-color: #4e46e5;
-        color: #4e46e5;
-    }
+    .unassigned:hover { border-color: #4e46e5; color: #4e46e5; }
 
-    .count-badge {
-        text-align: center;
-    }
-    .count-value {
-        display: block;
-        font-size: 18px;
-        font-weight: 800;
-        color: #1e293b;
-    }
-    .count-label {
-        font-size: 11px;
-        color: #94a3b8;
-        text-transform: uppercase;
-        font-weight: 600;
-    }
+    .count-badge { text-align: center; }
+    .count-value { display: block; font-size: 18px; font-weight: 800; color: #1e293b; }
+    .count-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
 
     .action-group {
         display: flex;
@@ -125,12 +110,10 @@
         white-space: nowrap;
     }
 
-    .btn-view { background: #eef2ff; color: #4338ca; }
-    .btn-view:hover { background: #4338ca; color: white; }
-
-    .btn-edit { background: #ecfdf5; color: #059669; }
-    .btn-edit:hover { background: #059669; color: white; }
-
+    .btn-view   { background: #eef2ff; color: #4338ca; }
+    .btn-view:hover   { background: #4338ca; color: white; }
+    .btn-edit   { background: #ecfdf5; color: #059669; }
+    .btn-edit:hover   { background: #059669; color: white; }
     .btn-delete { background: #fff1f2; color: #e11d48; }
     .btn-delete:hover { background: #e11d48; color: white; }
 
@@ -145,7 +128,11 @@
         letter-spacing: 1px;
     }
 
-    /* ── Tablet (≤ 900px): collapse counts, shrink treasurer ── */
+    /* Mobile-only elements — hidden on desktop */
+    .mobile-top-row { display: none; }
+    .mobile-counts  { display: none; }
+
+    /* ── Tablet (≤ 900px) ── */
     @media (max-width: 900px) {
         .society-card-row,
         .table-head-labels {
@@ -153,78 +140,56 @@
             padding-left: 18px;
             padding-right: 18px;
         }
-
-        .btn-action {
-            padding: 7px 12px;
-            font-size: 12px;
-        }
+        .btn-action { padding: 7px 12px; font-size: 12px; }
     }
 
-    /* ── Mobile (≤ 640px): stack everything as a card ── */
+    /* ── Mobile (≤ 640px) ── */
     @media (max-width: 640px) {
-        .table-head-labels {
-            display: none;
-        }
+        .table-head-labels { display: none; }
 
         .society-card-row {
             display: flex;
             flex-direction: column;
             align-items: stretch;
             gap: 14px;
-            padding: 18px 18px;
+            padding: 18px;
             border-radius: 16px;
         }
 
-        /* Disable the slide animation on mobile – feels odd on flex */
-        .society-card-row:hover {
-            transform: none;
-        }
+        .society-card-row:hover { transform: none; }
 
-        /* Row 1 – identity + counts side-by-side */
-        .society-row-top {
+        /* Show mobile top row */
+        .mobile-top-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
         }
 
-        /* Row 2 – treasurer full-width */
-        .treasurer-pill {
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* Row 3 – actions full-width, spread evenly */
-        .action-group {
-            justify-content: stretch;
-        }
-
-        .action-group .btn-action,
-        .action-group form {
-            flex: 1;
-        }
-
-        .action-group form .btn-action {
-            width: 100%;
-            text-align: center;
-        }
-
-        /* Counts inline */
+        /* Show inline counts on mobile */
         .mobile-counts {
             display: flex;
             gap: 18px;
             flex-shrink: 0;
         }
 
-        /* Hide individual count cells; we'll show .mobile-counts instead */
-        .count-badge { display: none; }
-    }
+        /* Hide desktop-only columns on mobile */
+        .desktop-identity  { display: none; }
+        .desktop-treasurer { display: none; }
+        .count-badge       { display: none; }
 
-    /* Show .society-row-top wrapper only on mobile */
-    .society-row-top { display: contents; }
+        /* Treasurer pill full width on mobile */
+        .mobile-treasurer .treasurer-pill,
+        .mobile-treasurer a.treasurer-pill {
+            width: 100%;
+            box-sizing: border-box;
+        }
 
-    @media (max-width: 640px) {
-        .society-row-top { display: flex; }
+        /* Actions stretch full width */
+        .action-group { justify-content: stretch; }
+        .action-group .btn-action,
+        .action-group form { flex: 1; }
+        .action-group form .btn-action { width: 100%; text-align: center; }
     }
 </style>
 
@@ -234,7 +199,8 @@
         <p style="color: #64748b; margin-top: 5px;">A bird's-eye view of all registered communities</p>
     </div>
     {% if session.user.role == 'super_admin' %}
-    <a href="{{ url_for('societies.add_society') }}" class="btn-login" style="padding: 12px 25px; text-decoration: none; border-radius: 14px; box-shadow: 0 4px 12px rgba(78, 70, 229, 0.25);">
+    <a href="{{ url_for('societies.add_society') }}" class="btn-login"
+       style="padding: 12px 25px; text-decoration: none; border-radius: 14px; box-shadow: 0 4px 12px rgba(78,70,229,0.25);">
         + Add New Society
     </a>
     {% endif %}
@@ -252,35 +218,49 @@
 {% for society in societies %}
 <div class="society-card-row">
 
-    <!-- ── Top row on mobile: identity + counts ── -->
-    <div class="society-row-top">
-        <!-- 1. Identity -->
+    <!-- MOBILE TOP ROW: identity + inline counts (hidden on desktop) -->
+    <div class="mobile-top-row">
         <div class="society-info">
             <div class="building-icon">🏙️</div>
-            <div>
-                <div class="society-title">{{ society.name }}</div>
-            </div>
+            <div><div class="society-title">{{ society.name }}</div></div>
         </div>
-
-        <!-- Mobile-only inline counts -->
         <div class="mobile-counts">
-            <div class="count-badge" style="display: block;">
-                <span class="count-value" style="color: #6366f1;">{{ society.blocks or 0 }}</span>
+            <div style="text-align:center;">
+                <span class="count-value" style="color:#6366f1;">{{ society.blocks or 0 }}</span>
                 <span class="count-label">Blocks</span>
             </div>
-            <div class="count-badge" style="display: block;">
-                <span class="count-value" style="color: #10b981;">{{ society.flats or 0 }}</span>
+            <div style="text-align:center;">
+                <span class="count-value" style="color:#10b981;">{{ society.flats or 0 }}</span>
                 <span class="count-label">Units</span>
             </div>
         </div>
     </div>
 
-    <!-- 2. Treasurer -->
-    <div>
+    <!-- MOBILE TREASURER (hidden on desktop) -->
+    <div class="mobile-treasurer" style="display:none;">
         {% if society.treasurer_name %}
-            <div class="treasurer-pill">
-                <span>👤</span> {{ society.treasurer_name }}
-            </div>
+            <div class="treasurer-pill"><span>👤</span> {{ society.treasurer_name }}</div>
+        {% else %}
+            {% if session.user.role in ['admin', 'super_admin'] %}
+                <a href="{{ url_for('treasurers.add') }}" class="treasurer-pill unassigned">
+                    <span>➕</span> Assign Treasurer
+                </a>
+            {% else %}
+                <span class="society-subtitle">No Head</span>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- 1. DESKTOP Identity -->
+    <div class="society-info desktop-identity">
+        <div class="building-icon">🏙️</div>
+        <div><div class="society-title">{{ society.name }}</div></div>
+    </div>
+
+    <!-- 2. DESKTOP Treasurer -->
+    <div class="desktop-treasurer">
+        {% if society.treasurer_name %}
+            <div class="treasurer-pill"><span>👤</span> {{ society.treasurer_name }}</div>
         {% else %}
             {% if session.user.role in ['admin', 'super_admin'] %}
                 <a href="{{ url_for('treasurers.add') }}" class="treasurer-pill unassigned">
@@ -307,20 +287,36 @@
     <!-- 5. Actions -->
     <div class="action-group">
         <a href="{{ url_for('blocks.list_blocks', society_id=society.id) }}" class="btn-action btn-view">View Structure</a>
-        
+
         {% if session.user.role == 'super_admin' %}
         <a href="{{ url_for('societies.edit_society', id=society.id) }}" class="btn-action btn-edit">Edit</a>
-        
-        <form action="{{ url_for('societies.delete_society', id=society.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this society and all its units?')">
+
+        <form action="{{ url_for('societies.delete_society', id=society.id) }}" method="POST"
+              style="display: inline;" onsubmit="return confirm('Delete this society and all its units?')">
             <button type="submit" class="btn-action btn-delete">Delete</button>
         </form>
         {% endif %}
     </div>
+
 </div>
 {% else %}
-<div class="card" style="background: white; border-radius: 24px; padding: 60px; text-align: center; border: 2px dashed #e2e8f0;">
+<div class="card" style="background: white; border-radius: 24px; padding: 60px 20px; text-align: center; border: 2px dashed #e2e8f0;">
     <p style="color: #94a3b8; font-size: 16px;">No societies registered yet.</p>
 </div>
 {% endfor %}
+
+<!-- Show mobile-treasurer and hide desktop columns on mobile via JS -->
+<script>
+(function() {
+    function applyLayout() {
+        const isMobile = window.innerWidth <= 640;
+        document.querySelectorAll('.mobile-treasurer').forEach(el => {
+            el.style.display = isMobile ? 'block' : 'none';
+        });
+    }
+    applyLayout();
+    window.addEventListener('resize', applyLayout);
+})();
+</script>
 
 {% endblock %}

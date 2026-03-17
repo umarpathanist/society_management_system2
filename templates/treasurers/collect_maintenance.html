@@ -156,6 +156,27 @@
     }
     .btn-online:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(79,70,229,0.5); }
 
+    /* Locked/disabled field styling */
+    .field-locked {
+        opacity: 0.4;
+        pointer-events: none;
+        user-select: none;
+    }
+    .field-locked .modern-input,
+    .field-locked input,
+    .field-locked select {
+        background: #f1f5f9 !important;
+        cursor: not-allowed !important;
+    }
+
+    .btn-cash:disabled,
+    .btn-online:disabled {
+        opacity: 0.35;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
     @media (max-width: 540px) {
         .two-col { grid-template-columns: 1fr; }
         .payment-btns { grid-template-columns: 1fr; }
@@ -224,7 +245,7 @@
         </div>
 
         <!-- Monthly Amount -->
-        <div class="form-group" style="margin-bottom:22px;">
+        <div class="form-group field-locked" id="amount-group" style="margin-bottom:22px;">
             <label>Monthly Amount (₹)</label>
             <input type="number" name="amount" id="amount-input" class="modern-input"
                    placeholder="e.g. 1500" oninput="recalcTotal()" required>
@@ -233,10 +254,10 @@
         <hr class="divider">
 
         <!-- From period -->
-        <div class="two-col" style="margin-bottom:16px;">
+        <div class="two-col field-locked" id="from-period-group" style="margin-bottom:16px;">
             <div class="form-group">
                 <label>From Month</label>
-                <select name="start_month" id="start-month" class="modern-input" onchange="recalcTotal()" required>
+                <select name="start_month" id="start-month" class="modern-input" onchange="updateEndMonthOptions()" required>
                     {% for m in ["January","February","March","April","May","June",
                                  "July","August","September","October","November","December"] %}
                         <option value="{{ m }}">{{ m }}</option>
@@ -251,10 +272,10 @@
         </div>
 
         <!-- To period -->
-        <div class="two-col" style="margin-bottom:22px;">
+        <div class="two-col field-locked" id="to-period-group" style="margin-bottom:22px;">
             <div class="form-group">
                 <label>Advance Payment Until (Month)</label>
-                <select name="end_month" id="end-month" class="modern-input" onchange="recalcTotal()" required>
+                <select name="end_month" id="end-month" class="modern-input" onchange="onEndMonthChange(this); recalcTotal();" required>
                     {% for m in ["January","February","March","April","May","June",
                                  "July","August","September","October","November","December"] %}
                         <option value="{{ m }}">{{ m }}</option>
@@ -290,10 +311,10 @@
 
         <!-- Cash + Online buttons -->
         <div class="payment-btns">
-            <button type="button" class="btn-cash" onclick="submitCash()">
+            <button type="button" class="btn-cash" id="btn-cash" onclick="submitCash()" disabled>
                 <span>💵</span> Pay via Cash
             </button>
-            <button type="button" class="btn-online" onclick="submitOnline()">
+            <button type="button" class="btn-online" id="btn-online" onclick="submitOnline()" disabled>
                 <span>📲</span> Pay via Online
             </button>
         </div>
@@ -417,11 +438,73 @@ function submitOnline() {
     .catch(err => alert('Network error: ' + err));
 }
 
+// ── Unlock fields once a flat is selected ──
+function unlockFields() {
+    ['amount-group', 'from-period-group', 'to-period-group'].forEach(id => {
+        document.getElementById(id)?.classList.remove('field-locked');
+    });
+    document.getElementById('btn-cash').disabled  = false;
+    document.getElementById('btn-online').disabled = false;
+}
+
+function lockFields() {
+    ['amount-group', 'from-period-group', 'to-period-group'].forEach(id => {
+        document.getElementById(id)?.classList.add('field-locked');
+    });
+    document.getElementById('btn-cash').disabled  = true;
+    document.getElementById('btn-online').disabled = true;
+}
+
+// ── Restrict end month options based on start month/year ──
+function updateEndMonthOptions() {
+    const sMonth = document.getElementById('start-month').value;
+    const sYear  = parseInt(document.getElementById('start-year').value) || 0;
+    const eYear  = parseInt(document.getElementById('end-year').value)   || 0;
+    const endSel = document.getElementById('end-month');
+    const startNum = MONTH_NUM[sMonth] || 1;
+
+    Array.from(endSel.options).forEach(opt => {
+        if (!opt.value) return; // skip blank option
+        const optNum = MONTH_NUM[opt.value];
+        // Disable if same year and month is before start month
+        if (eYear === sYear && optNum < startNum) {
+            opt.disabled = true;
+            opt.style.color = '#cbd5e1';
+        } else {
+            opt.disabled = false;
+            opt.style.color = '';
+        }
+    });
+
+    // If current end month is now invalid, reset to start month
+    const curEndNum = MONTH_NUM[endSel.value];
+    if (eYear === sYear && curEndNum < startNum) {
+        endSel.value = sMonth;
+    }
+
+    recalcTotal();
+}
+
+function onEndMonthChange(sel) {
+    // Prevent selecting a disabled month
+    const sMonth = document.getElementById('start-month').value;
+    const sYear  = parseInt(document.getElementById('start-year').value) || 0;
+    const eYear  = parseInt(document.getElementById('end-year').value)   || 0;
+    const selNum = MONTH_NUM[sel.value];
+    const startNum = MONTH_NUM[sMonth] || 1;
+
+    if (eYear === sYear && selNum < startNum) {
+        sel.value = sMonth; // snap back
+    }
+    recalcTotal();
+}
+
 // ── Load occupied flats ──
 function loadFlats(blockId) {
     const flatSel = document.getElementById('flat-select');
     flatSel.innerHTML = '<option value="">Loading...</option>';
     flatSel.disabled = true;
+    lockFields();
     hideSummary();
     document.getElementById('pending-banner').classList.remove('visible');
 
@@ -447,7 +530,13 @@ function onFlatChange(sel) {
     hideSummary();
     document.getElementById('pending-banner').classList.remove('visible');
 
-    if (!flatId) return;
+    if (!flatId) {
+        lockFields();
+        return;
+    }
+
+    // Unlock fields now that a flat is selected
+    unlockFields();
 
     document.getElementById('sum-flat').textContent   = `Flat ${flatNum}`;
     document.getElementById('sum-status').textContent = 'Loading...';
@@ -472,13 +561,32 @@ function onFlatChange(sel) {
                 document.getElementById('end-year').value    = data.year;
 
                 if (data.amount) document.getElementById('amount-input').value = data.amount;
+
+                // Update end month options based on auto-filled start
+                updateEndMonthOptions();
                 recalcTotal();
             } else {
-                document.getElementById('pending-text').textContent = '✅ All dues cleared for this flat';
+                // All dues cleared — allow advance payment entry
+                document.getElementById('pending-text').textContent = '✅ All dues cleared — you can record advance payment';
                 document.getElementById('pending-banner').classList.add('visible');
                 document.getElementById('sum-status').textContent = 'All dues cleared';
                 document.getElementById('sum-badge').innerHTML =
                     '<span class="status-badge badge-paid">Up to date</span>';
+
+                // Default to current month so treasurer can pick advance period
+                const now = new Date();
+                const monthNames = ["January","February","March","April","May","June",
+                                    "July","August","September","October","November","December"];
+                const curMonth = monthNames[now.getMonth()];
+                const curYear  = now.getFullYear();
+
+                document.getElementById('start-month').value = curMonth;
+                document.getElementById('start-year').value  = curYear;
+                document.getElementById('end-month').value   = curMonth;
+                document.getElementById('end-year').value    = curYear;
+
+                updateEndMonthOptions();
+                recalcTotal();
             }
         })
         .catch(() => { document.getElementById('sum-status').textContent = 'Could not fetch status'; });

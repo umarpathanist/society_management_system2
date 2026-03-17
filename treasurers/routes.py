@@ -1017,7 +1017,7 @@ from maintenance.repository import MaintenanceRepository
 from notifications.repository import NotificationRepository
 from database.connection import get_db_connection
 from psycopg2.extras import RealDictCursor
-from utils.mail import send_maintenance_reminder
+from utils.mail import send_maintenance_reminder, send_payment_received_to_resident, send_payment_confirmation_to_treasurer
 
 treasurers_bp = Blueprint("treasurers", __name__, url_prefix="/treasurers")
 
@@ -1130,6 +1130,202 @@ def get_next_unpaid(flat_id):
         })
     return jsonify({"error": "No unpaid bills"}), 404
 
+# # ---------------------------------------------------------
+# # 6. COLLECT MAINTENANCE (Cash + Online Razorpay)
+# # ---------------------------------------------------------
+# @treasurers_bp.route("/collect-maintenance", methods=["GET", "POST"])
+# @login_required
+# @role_required("treasurer", "admin", "super_admin")
+# def collect_maintenance():
+#     user = session.get("user")
+#     role = user.get("role", "").lower()
+#     # Read society_id from URL args (GET) OR form data (POST AJAX)
+#     selected_soc_id = (
+#         request.args.get("society_id") or request.form.get("society_id")
+#     ) if role == "super_admin" else session.get("society_id")
+
+#     if request.method == "POST":
+#         print("FORM DATA:", dict(request.form))
+#         flat_id      = request.form.get("flat_id")
+#         amount       = request.form.get("amount")
+#         s_month      = request.form.get("start_month")
+#         s_year       = request.form.get("start_year")
+#         e_month      = request.form.get("end_month")
+#         e_year       = request.form.get("end_year")
+#         payment_mode = request.form.get("payment_mode", "cash")  # 'cash' or 'online'
+
+#         if not all([flat_id, amount, s_month, s_year, e_month, e_year]):
+#             flash("Data missing. Please select a flat and fill all fields.", "warning")
+#             return redirect(url_for("treasurers.collect_maintenance", society_id=selected_soc_id))
+
+#         # ── ONLINE: Create Razorpay order, return JSON to JS ──
+#         if payment_mode == "online":
+#             try:
+#                 start_dt = datetime(int(s_year), MONTH_MAP[s_month], 1)
+#                 end_dt   = datetime(int(e_year),  MONTH_MAP[e_month],  1)
+#                 months   = 0
+#                 curr     = start_dt
+#                 while curr <= end_dt:
+#                     months += 1
+#                     curr += relativedelta(months=1)
+
+#                 total_paise = int(float(amount) * months * 100)
+
+#                 client = get_razorpay_client()
+#                 order  = client.order.create(data={
+#                     "amount":   total_paise,
+#                     "currency": "INR",
+#                     "receipt":  f"maint_{flat_id}_{int(datetime.now().timestamp())}"
+#                 })
+
+#                 return jsonify({
+#                     "status":           "order_created",
+#                     "order_id":         order["id"],
+#                     "amount":           order["amount"],
+#                     "key":              current_app.config["RAZORPAY_KEY_ID"],
+#                     "full_name":        user.get("full_name", ""),
+#                     "email":            user.get("email", ""),
+#                     "flat_id":          flat_id,
+#                     "amount_per_month": amount,
+#                     "start_month":      s_month,
+#                     "start_year":       s_year,
+#                     "end_month":        e_month,
+#                     "end_year":         e_year,
+#                 })
+#             except Exception as e:
+#                 return jsonify({"status": "error", "message": str(e)}), 500
+
+#         # ── CASH: Process payment directly ──
+#         try:
+#             start_dt = datetime(int(s_year), MONTH_MAP[s_month], 1)
+#             end_dt   = datetime(int(e_year),  MONTH_MAP[e_month],  1)
+#             curr     = start_dt
+#             count    = 0
+#             while curr <= end_dt:
+#                 m_name = REV_MONTH_MAP[curr.month]
+#                 y_num  = curr.year
+#                 bill   = MaintenanceRepository.get_by_flat_id_month_year(flat_id, m_name, y_num)
+#                 if not bill:
+#                     MaintenanceRepository.bulk_create_maintenance(
+#                         [flat_id], float(amount), m_name, y_num, curr.strftime('%Y-%m-10')
+#                     )
+#                 MaintenanceRepository.mark_as_paid_manually(flat_id, m_name, y_num)
+#                 curr += relativedelta(months=1)
+#                 count += 1
+#             flash(f"✅ Cash payment for {count} month(s) recorded successfully!", "success")
+#             return redirect(url_for("dashboard.index_redirect"))
+#         except Exception as e:
+#             flash(f"Error: {str(e)}", "danger")
+#             return redirect(url_for("treasurers.collect_maintenance",
+#                                     society_id=selected_soc_id))
+
+#     # ── GET ──
+#     societies_data = []
+#     if role == "super_admin":
+#         societies_data = SocietyRepository.get_all()
+
+#     blocks_data = []
+#     if selected_soc_id:
+#         from blocks.repository import BlockRepository
+#         blocks_data = BlockRepository.get_by_society(selected_soc_id)
+
+#     return render_template(
+#         "treasurers/collect_maintenance.html",
+#         societies=societies_data,
+#         blocks=blocks_data,
+#         selected_soc=int(selected_soc_id) if selected_soc_id else None,
+#         role=role,
+#         now=datetime.now()
+#     )
+
+
+# # ---------------------------------------------------------
+# # 7. VERIFY RAZORPAY PAYMENT (called by JS after modal success)
+# # ---------------------------------------------------------
+# @treasurers_bp.route("/verify-collect-payment", methods=["POST"])
+# @login_required
+# def verify_collect_payment():
+#     import razorpay
+#     data       = request.get_json()
+#     flat_id    = data.get("flat_id")
+#     amount     = data.get("amount_per_month")
+#     s_month    = data.get("start_month")
+#     s_year     = data.get("start_year")
+#     e_month    = data.get("end_month")
+#     e_year     = data.get("end_year")
+#     payment_id = data.get("razorpay_payment_id")
+#     order_id   = data.get("razorpay_order_id")
+#     signature  = data.get("razorpay_signature")
+
+#     # 1. Verify Razorpay signature
+#     try:
+#         client = razorpay.Client(
+#             auth=(current_app.config["RAZORPAY_KEY_ID"],
+#                   current_app.config["RAZORPAY_KEY_SECRET"])
+#         )
+#         client.utility.verify_payment_signature({
+#             "razorpay_order_id":   order_id,
+#             "razorpay_payment_id": payment_id,
+#             "razorpay_signature":  signature
+#         })
+#     except Exception:
+#         return jsonify({"status": "error", "message": "Signature verification failed"}), 400
+
+#     # 2. Mark all months in range as paid (Online)
+#     try:
+#         start_dt = datetime(int(s_year), MONTH_MAP[s_month], 1)
+#         end_dt   = datetime(int(e_year),  MONTH_MAP[e_month],  1)
+#         curr     = start_dt
+#         while curr <= end_dt:
+#             m_name = REV_MONTH_MAP[curr.month]
+#             y_num  = curr.year
+#             # Create bill if doesn't exist
+#             bill = MaintenanceRepository.get_by_flat_id_month_year(flat_id, m_name, y_num)
+#             if not bill:
+#                 MaintenanceRepository.bulk_create_maintenance(
+#                     [flat_id], float(amount), m_name, y_num, curr.strftime('%Y-%m-10')
+#                 )
+#                 bill = MaintenanceRepository.get_by_flat_id_month_year(flat_id, m_name, y_num)
+#             # Mark as paid with Online method + Razorpay payment ID
+#             if bill:
+#                 MaintenanceRepository.mark_as_paid(
+#                     bill["id"], method="Online", p_id=payment_id
+#                 )
+#             curr += relativedelta(months=1)
+
+#         flash("Online payment verified and recorded! ✅", "success")
+#         return jsonify({"status": "success"})
+#     except Exception as e:
+#         return jsonify({"status": "error", "message": str(e)}), 500
+
+# At the top of treasurers/routes.py, make sure this import exists:
+# from utils.mail import send_payment_received_to_resident, send_payment_confirmation_to_treasurer
+
+# ---------------------------------------------------------
+# HELPER: fetch resident info for a flat
+# ---------------------------------------------------------
+def _get_flat_resident(flat_id):
+    """Returns (email, name, flat_number) for the flat's tenant or owner."""
+    from database.connection import get_db_connection
+    from psycopg2.extras import RealDictCursor
+    conn = get_db_connection()
+    cur  = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute("""
+            SELECT
+                f.flat_number,
+                COALESCE(ut.email,    uo.email)     as email,
+                COALESCE(ut.full_name, uo.full_name) as full_name
+            FROM flats f
+            LEFT JOIN users uo ON f.owner_id  = uo.id
+            LEFT JOIN users ut ON f.tenant_id = ut.id
+            WHERE f.id = %s
+        """, (flat_id,))
+        return cur.fetchone()
+    finally:
+        cur.close(); conn.close()
+
+
 # ---------------------------------------------------------
 # 6. COLLECT MAINTENANCE (Cash + Online Razorpay)
 # ---------------------------------------------------------
@@ -1139,7 +1335,6 @@ def get_next_unpaid(flat_id):
 def collect_maintenance():
     user = session.get("user")
     role = user.get("role", "").lower()
-    # Read society_id from URL args (GET) OR form data (POST AJAX)
     selected_soc_id = (
         request.args.get("society_id") or request.form.get("society_id")
     ) if role == "super_admin" else session.get("society_id")
@@ -1152,13 +1347,13 @@ def collect_maintenance():
         s_year       = request.form.get("start_year")
         e_month      = request.form.get("end_month")
         e_year       = request.form.get("end_year")
-        payment_mode = request.form.get("payment_mode", "cash")  # 'cash' or 'online'
+        payment_mode = request.form.get("payment_mode", "cash")
 
         if not all([flat_id, amount, s_month, s_year, e_month, e_year]):
             flash("Data missing. Please select a flat and fill all fields.", "warning")
             return redirect(url_for("treasurers.collect_maintenance", society_id=selected_soc_id))
 
-        # ── ONLINE: Create Razorpay order, return JSON to JS ──
+        # ── ONLINE: Create Razorpay order, return JSON ──
         if payment_mode == "online":
             try:
                 start_dt = datetime(int(s_year), MONTH_MAP[s_month], 1)
@@ -1170,7 +1365,6 @@ def collect_maintenance():
                     curr += relativedelta(months=1)
 
                 total_paise = int(float(amount) * months * 100)
-
                 client = get_razorpay_client()
                 order  = client.order.create(data={
                     "amount":   total_paise,
@@ -1195,12 +1389,15 @@ def collect_maintenance():
             except Exception as e:
                 return jsonify({"status": "error", "message": str(e)}), 500
 
-        # ── CASH: Process payment directly ──
+        # ── CASH: Process and send emails ──
         try:
+            from utils.mail import send_payment_received_to_resident, send_payment_confirmation_to_treasurer
+
             start_dt = datetime(int(s_year), MONTH_MAP[s_month], 1)
             end_dt   = datetime(int(e_year),  MONTH_MAP[e_month],  1)
             curr     = start_dt
             count    = 0
+
             while curr <= end_dt:
                 m_name = REV_MONTH_MAP[curr.month]
                 y_num  = curr.year
@@ -1212,12 +1409,46 @@ def collect_maintenance():
                 MaintenanceRepository.mark_as_paid_manually(flat_id, m_name, y_num)
                 curr += relativedelta(months=1)
                 count += 1
-            flash(f"✅ Cash payment for {count} month(s) recorded successfully!", "success")
+
+            # ── Send emails for each month range ──
+            resident = _get_flat_resident(flat_id)
+            if resident and resident.get("email"):
+                # One summary email covering the full range
+                period = f"{s_month} {s_year}" if s_month == e_month and s_year == e_year \
+                         else f"{s_month} {s_year} – {e_month} {e_year}"
+                total_amount = float(amount) * count
+
+                send_payment_received_to_resident(
+                    recipient_email  = resident["email"],
+                    recipient_name   = resident["full_name"],
+                    amount           = total_amount,
+                    month            = period,
+                    year             = "",
+                    payment_method   = "Cash",
+                    flat_number      = resident["flat_number"]
+                )
+
+            # Email to treasurer
+            treasurer_email = user.get("email")
+            if treasurer_email:
+                send_payment_confirmation_to_treasurer(
+                    treasurer_email  = treasurer_email,
+                    treasurer_name   = user.get("full_name", "Treasurer"),
+                    resident_name    = resident["full_name"] if resident else "Resident",
+                    flat_number      = resident["flat_number"] if resident else flat_id,
+                    amount           = float(amount) * count,
+                    month            = f"{s_month} {s_year}" if s_month == e_month and s_year == e_year \
+                                       else f"{s_month} {s_year} – {e_month} {e_year}",
+                    year             = "",
+                    payment_method   = "Cash"
+                )
+
+            flash(f"✅ Cash payment for {count} month(s) recorded! Emails sent.", "success")
             return redirect(url_for("dashboard.index_redirect"))
+
         except Exception as e:
             flash(f"Error: {str(e)}", "danger")
-            return redirect(url_for("treasurers.collect_maintenance",
-                                    society_id=selected_soc_id))
+            return redirect(url_for("treasurers.collect_maintenance", society_id=selected_soc_id))
 
     # ── GET ──
     societies_data = []
@@ -1240,12 +1471,15 @@ def collect_maintenance():
 
 
 # ---------------------------------------------------------
-# 7. VERIFY RAZORPAY PAYMENT (called by JS after modal success)
+# 7. VERIFY RAZORPAY PAYMENT + send emails
 # ---------------------------------------------------------
 @treasurers_bp.route("/verify-collect-payment", methods=["POST"])
 @login_required
 def verify_collect_payment():
     import razorpay
+    from utils.mail import send_payment_received_to_resident, send_payment_confirmation_to_treasurer
+
+    user       = session.get("user")
     data       = request.get_json()
     flat_id    = data.get("flat_id")
     amount     = data.get("amount_per_month")
@@ -1271,33 +1505,64 @@ def verify_collect_payment():
     except Exception:
         return jsonify({"status": "error", "message": "Signature verification failed"}), 400
 
-    # 2. Mark all months in range as paid (Online)
+    # 2. Mark all months as paid (Online)
     try:
         start_dt = datetime(int(s_year), MONTH_MAP[s_month], 1)
         end_dt   = datetime(int(e_year),  MONTH_MAP[e_month],  1)
         curr     = start_dt
+        count    = 0
+
         while curr <= end_dt:
             m_name = REV_MONTH_MAP[curr.month]
             y_num  = curr.year
-            # Create bill if doesn't exist
-            bill = MaintenanceRepository.get_by_flat_id_month_year(flat_id, m_name, y_num)
+            bill   = MaintenanceRepository.get_by_flat_id_month_year(flat_id, m_name, y_num)
             if not bill:
                 MaintenanceRepository.bulk_create_maintenance(
                     [flat_id], float(amount), m_name, y_num, curr.strftime('%Y-%m-10')
                 )
                 bill = MaintenanceRepository.get_by_flat_id_month_year(flat_id, m_name, y_num)
-            # Mark as paid with Online method + Razorpay payment ID
             if bill:
                 MaintenanceRepository.mark_as_paid(
                     bill["id"], method="Online", p_id=payment_id
                 )
             curr += relativedelta(months=1)
+            count += 1
+
+        # 3. Send emails
+        resident = _get_flat_resident(flat_id)
+        period   = f"{s_month} {s_year}" if (s_month == e_month and s_year == e_year) \
+                   else f"{s_month} {s_year} – {e_month} {e_year}"
+        total_amount = float(amount) * count
+
+        if resident and resident.get("email"):
+            send_payment_received_to_resident(
+                recipient_email = resident["email"],
+                recipient_name  = resident["full_name"],
+                amount          = total_amount,
+                month           = period,
+                year            = "",
+                payment_method  = "Online (Razorpay)",
+                flat_number     = resident["flat_number"]
+            )
+
+        treasurer_email = user.get("email") if user else None
+        if treasurer_email:
+            send_payment_confirmation_to_treasurer(
+                treasurer_email = treasurer_email,
+                treasurer_name  = user.get("full_name", "Treasurer"),
+                resident_name   = resident["full_name"] if resident else "Resident",
+                flat_number     = resident["flat_number"] if resident else flat_id,
+                amount          = total_amount,
+                month           = period,
+                year            = "",
+                payment_method  = "Online (Razorpay)"
+            )
 
         flash("Online payment verified and recorded! ✅", "success")
         return jsonify({"status": "success"})
+
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 # ---------------------------------------------------------
 # 8. GENERATE MAINTENANCE
@@ -1400,4 +1665,4 @@ def generate_maintenance():
             conn.close()
 
     societies_list = SocietyRepository.get_all() if role == "super_admin" else []
-    return render_template("treasurers/generate_maintenance.html", societies=societies_list, role=role)
+    return render_template("treasurers/generate_maintenance.html", societies=societies_list, role=role, now=datetime.now())

@@ -189,3 +189,69 @@ def send_sla_escalation_email(admin_email, admin_name, ticket_id, ticket_title):
     
     msg = Message(subject, recipients=[admin_email], body=body)
     threading.Thread(target=send_async_email, args=(app, msg)).start()
+
+# ── ADD THESE TWO FUNCTIONS TO utils/mail.py ──────────────────────────────
+
+def send_payment_received_to_resident(recipient_email, recipient_name, amount, month, year, payment_method, flat_number):
+    """Sent to owner/tenant after their maintenance payment is recorded."""
+    app = current_app._get_current_object()
+    subject = f"✅ Payment Received: {month} {year} - SocietyHQ"
+
+    body = f"""
+    Hello {recipient_name},
+
+    We have successfully received your maintenance payment. Here are the details:
+
+    Payment Details:
+    --------------------------------------
+    Flat Number  : {flat_number}
+    Month        : {month} {year}
+    Amount Paid  : ₹{float(amount):,.2f}
+    Payment Mode : {payment_method}
+    Status       : PAID ✅
+    --------------------------------------
+
+    Thank you for your timely payment. Your receipt has been recorded in the system.
+
+    You can view your payment history at:
+    Login URL: http://127.0.0.1:5000/login
+
+    Regards,
+    SocietyHQ Team
+    """
+
+    msg = Message(subject, recipients=[recipient_email], body=body)
+    threading.Thread(target=send_async_email, args=(app, msg)).start()
+
+
+def send_payment_confirmation_to_treasurer(treasurer_email, treasurer_name, resident_name, flat_number, amount, month, year, payment_method):
+    """Sent to treasurer after they record a payment (cash or online)."""
+    app = current_app._get_current_object()
+    subject = f"🧾 Payment Recorded: {flat_number} - {month} {year}"
+
+    body = f"""
+    Hello {treasurer_name},
+
+    A maintenance payment has been successfully recorded. Here is a summary:
+
+    Transaction Summary:
+    --------------------------------------
+    Resident     : {resident_name}
+    Flat Number  : {flat_number}
+    Month        : {month} {year}
+    Amount       : ₹{float(amount):,.2f}
+    Payment Mode : {payment_method}
+    Recorded By  : {treasurer_name}
+    Status       : PAID ✅
+    --------------------------------------
+
+    This is an automated confirmation. No action required.
+
+    Regards,
+    SocietyHQ System
+    """
+
+    msg = Message(subject, recipients=[treasurer_email], body=body)
+    threading.Thread(target=send_async_email, args=(app, msg)).start()
+
+    
