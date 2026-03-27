@@ -4,7 +4,7 @@ Flask-APScheduler
 psycopg2-binary
 python-dotenv
 gunicorn
-xhtml2pdf
+# xhtml2pdf
 playwright
 pytest
 pytest-asyncio

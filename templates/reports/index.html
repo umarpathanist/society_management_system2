@@ -5,380 +5,727 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <style>
-    /* ── Base ── */
-    * { box-sizing: border-box; }
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; }
 
+    /* ── Page wrapper ── */
+    .rh-wrap {
+        padding: 24px 20px 60px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .rh-header { margin-bottom: 32px; }
+    .rh-header h1 {
+        font-size: clamp(22px, 5vw, 30px);
+        font-weight: 800;
+        color: #1e293b;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+    .rh-header p {
+        color: #64748b;
+        font-size: 15px;
+        margin: 6px 0 0;
+    }
+
+    /* ── Grid ── */
     .report-grid {
         display: grid;
         grid-template-columns: 1.1fr 0.9fr;
-        gap: 30px;
-        margin-top: 30px;
+        gap: 20px;
     }
 
+    /* ── Cards ── */
     .report-card {
         background: white;
-        border-radius: 24px;
-        padding: 35px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+        border-radius: 22px;
+        padding: 28px 24px;
         border: 1px solid #f1f5f9;
-        transition: transform 0.3s ease;
-        /* Prevent card from overflowing its grid cell */
+        box-shadow: 0 6px 20px rgba(0,0,0,0.04);
         min-width: 0;
         overflow: hidden;
+        transition: transform 0.25s ease;
     }
-    .report-card:hover { transform: translateY(-5px); }
+    .report-card:not(.dark-card):hover { transform: translateY(-4px); }
 
+    .report-card.no-pad { padding: 0; }
+    .no-pad .card-head { padding: 20px 24px 10px; }
+
+    /* ── Card title ── */
     .report-title {
-        font-size: 13px;
+        font-size: 11px;
         font-weight: 800;
         color: #94a3b8;
         text-transform: uppercase;
         letter-spacing: 1.5px;
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 30px;
+        gap: 10px;
+        margin-bottom: 24px;
         flex-wrap: wrap;
     }
-    .report-title span { background: #f1f5f9; padding: 8px; border-radius: 10px; font-size: 18px; flex-shrink: 0; }
+    .report-title .icon {
+        background: #f1f5f9;
+        padding: 7px 8px;
+        border-radius: 10px;
+        font-size: 16px;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+    .report-title.light { color: rgba(255,255,255,0.65); margin-bottom: 16px; }
+    .report-title.light .icon { background: rgba(255,255,255,0.1); }
 
-    /* Balance sheet rows */
+    /* ── Balance rows ── */
     .ledger-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 18px 0;
+        padding: 16px 0;
         border-bottom: 1px solid #f8fafc;
         font-size: 14px;
         font-weight: 500;
         gap: 10px;
         flex-wrap: wrap;
     }
+    .row-label { color: #64748b; }
+    .row-val { font-weight: 800; font-size: 18px; }
+    .c-green  { color: #10b981; }
+    .c-red    { color: #f43f5e; }
+    .c-indigo { color: #4e46e5; }
 
-    .progress-container { margin: 30px 0; }
+    /* ── Progress ── */
+    .progress-container { margin: 24px 0 8px; }
     .progress-labels {
         display: flex;
         justify-content: space-between;
         flex-wrap: wrap;
-        gap: 6px;
-        font-size: 11px;
-        font-weight: 700;
+        gap: 4px;
+        font-size: 10px;
+        font-weight: 800;
         color: #94a3b8;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
     }
-    .progress-track { height: 12px; background: #f1f5f9; border-radius: 20px; overflow: hidden; display: flex; }
-
-    .badge-in  { color: #059669; font-weight: 800; background: #ecfdf5; padding: 4px 10px; border-radius: 8px; font-size: 10px; display: inline-block; }
-    .badge-out { color: #dc2626; font-weight: 800; background: #fff1f2; padding: 4px 10px; border-radius: 8px; font-size: 10px; display: inline-block; }
-
-    /* Compliance buttons */
-    .compliance-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
+    .progress-track {
+        height: 10px;
+        background: #f1f5f9;
+        border-radius: 20px;
+        overflow: hidden;
+        display: flex;
     }
-    .btn-outline {
-        background: rgba(255,255,255,0.1);
-        color: white;
-        border: 1px solid rgba(255,255,255,0.2);
-        padding: 14px 12px;
+
+    /* ── Treasury box ── */
+    .treasury-box {
+        background: #f8fafc;
         border-radius: 14px;
+        padding: 18px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        border: none;
+    }
+    .treasury-label { font-weight: 800; color: #475569; font-size: 14px; }
+    .treasury-amount { font-size: clamp(20px, 4vw, 26px); font-weight: 800; color: #4e46e5; letter-spacing: -1px; }
+
+    /* ── Dark compliance card ── */
+    .report-card.dark-card,
+    .report-card.dark-card:hover {
+        background: linear-gradient(140deg, #1e293b 0%, #0f172a 100%) !important;
+        color: white !important;
+        border-color: transparent !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transform: none !important;
+    }
+    .report-card.dark-card .report-title { color: rgba(255,255,255,0.6) !important; }
+    .report-card.dark-card .report-title .icon {
+        background: rgba(255,255,255,0.12) !important;
+    }
+    .report-card.dark-card p {
+        font-size: 14px;
+        color: #94a3b8 !important;
+        line-height: 1.65;
+        margin: 0 0 24px;
+    }
+    .compliance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-outline {
+        background: rgba(255,255,255,0.1) !important;
+        color: #fff !important;
+        border: 1px solid rgba(255,255,255,0.25) !important;
+        padding: 13px 10px;
+        border-radius: 12px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
-        transition: 0.2s;
         text-align: center;
-        text-decoration: none;
+        text-decoration: none !important;
         display: block;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        transition: background 0.2s, color 0.2s;
     }
-    .btn-outline:hover { background: white; color: #1e293b; }
+    .btn-outline:hover {
+        background: #fff !important;
+        color: #1e293b !important;
+    }
 
-    /* Table wrapper — THE key fix for horizontal scroll */
+    /* ── Span-2 cards ── */
+    .span-2 { grid-column: span 2; }
+
+    /* ── Table scroll wrapper ── */
     .table-scroll {
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        background:
+            linear-gradient(to right, white 30%, transparent),
+            linear-gradient(to left,  #f1f5f9 30%, transparent) 100% 0,
+            radial-gradient(farthest-side at 0   50%, rgba(0,0,0,0.06), transparent),
+            radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,0.06), transparent) 100% 0;
+        background-repeat: no-repeat;
+        background-color: white;
+        background-size: 40px 100%, 40px 100%, 12px 100%, 12px 100%;
+        background-attachment: local, local, scroll, scroll;
         border-radius: 0 0 20px 20px;
     }
 
+    /* ── Tables ── */
+    
     .modern-table {
         width: 100%;
         border-collapse: collapse;
-        /* min-width keeps columns readable; scroll handles the rest */
-        min-width: 600px;
+        min-width: 640px;
     }
     .modern-table th {
         text-align: left;
-        padding: 16px 20px;
-        font-size: 11px;
+        padding: 14px 20px;
+        font-size: 10px;
         font-weight: 800;
         color: #94a3b8;
         text-transform: uppercase;
         letter-spacing: 1px;
-        border-bottom: 2px solid #f8fafc;
+        border-bottom: 2px solid #f1f5f9;
         white-space: nowrap;
+        background: #fff;
+        position: sticky;
+        top: 0;
     }
     .modern-table td {
-        padding: 16px 20px;
+        padding: 14px 20px;
         border-bottom: 1px solid #f8fafc;
         font-size: 14px;
         vertical-align: middle;
+        white-space: nowrap;
     }
-    .modern-table tr:hover { background: #fafbfc; }
+    .modern-table tr:last-child td { border-bottom: none; }
+    .modern-table tbody tr:hover { background: #fafbfc; }
 
+    /* ── Badges ── */
+    .badge {
+        display: inline-block;
+        padding: 4px 11px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+    .badge-unit { background: #eef2ff; color: #4e46e5; }
+    .badge-in   { background: #ecfdf5; color: #059669; }
+    .badge-out  { background: #fff1f2; color: #dc2626; }
+
+    /* ── Pay button ── */
     .btn-pay {
         background: #4e46e5;
         color: white;
-        padding: 9px 18px;
-        border-radius: 12px;
+        padding: 8px 16px;
+        border-radius: 10px;
         border: none;
         font-size: 13px;
         font-weight: 700;
-        transition: all 0.2s;
-        display: inline-block;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
         cursor: pointer;
         white-space: nowrap;
+        box-shadow: 0 3px 10px rgba(79,70,229,0.25);
+        transition: background 0.15s;
     }
-    .btn-pay:hover { background: #4338ca; }
+    .btn-pay:hover:not(:disabled) { background: #4338ca; }
+    .btn-pay:disabled { cursor: not-allowed; }
 
-    /* ── Tablet ≤ 860px: single column grid ── */
+    /* ── Empty state ── */
+    .empty-state {
+        text-align: center;
+        padding: 52px 20px;
+        color: #94a3b8;
+        font-size: 15px;
+        font-weight: 500;
+    }
+
+    /* ── Notes cell can wrap ── */
+    .td-notes {
+        white-space: normal !important;
+        max-width: 200px;
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .date-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    }
+    .date-cell .date {
+        color: #334155;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    .date-cell .time {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    /* ════════════════════════════════════════════
+       RESPONSIVE BREAKPOINTS
+    ════════════════════════════════════════════ */
+
     @media (max-width: 860px) {
-        .report-grid {
-            grid-template-columns: 1fr;
-        }
-        .span-full {
-            grid-column: span 1 !important;
-        }
+        .report-grid { grid-template-columns: 1fr; }
+        .span-2 { grid-column: span 1; }
         .report-card:hover { transform: none; }
     }
 
-    /* ── Mobile ≤ 540px ── */
     @media (max-width: 540px) {
-        .report-card {
-            padding: 20px 16px;
-            border-radius: 18px;
-        }
-
-        /* Net treasury number can be large — let it wrap or shrink */
-        .treasury-amount {
-            font-size: 20px !important;
-            word-break: break-all;
-        }
-
-        /* Stack compliance buttons to one column */
-        .compliance-grid {
-            grid-template-columns: 1fr;
-        }
-
+        .rh-wrap { padding: 16px 12px 48px; }
+        .report-card { padding: 20px 16px; border-radius: 18px; }
+        .report-card.no-pad { padding: 0; }
+        .no-pad .card-head { padding: 16px 16px 8px; }
+        .compliance-grid { grid-template-columns: 1fr; gap: 10px; }
+        .btn-pay { padding: 8px 12px; font-size: 12px; }
         .modern-table th,
-        .modern-table td {
-            padding: 12px 14px;
-            font-size: 13px;
-        }
+        .modern-table td { padding: 12px 14px; font-size: 13px; }
+    }
 
-        .btn-pay {
-            padding: 8px 12px;
-            font-size: 12px;
-        }
-
-        /* Reduce large rupee figures slightly */
-        .amount-large { font-size: 16px !important; }
+    @media (max-width: 400px) {
+        .scroll-hint { font-size: 11px; color: #94a3b8; padding: 4px 16px 10px; display: block; }
+    }
+    @media (min-width: 401px) {
+        .scroll-hint { display: none; }
     }
 </style>
 
-<!-- HEADER -->
-<div style="margin-bottom: 40px;">
-    <h1 style="font-size: 28px; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -1px;">📊 Intelligence Center</h1>
-    <p style="color: #64748b; font-size: 15px; margin-top: 8px;">Official society accounting and real-time audit summaries.</p>
-</div>
+<div class="rh-wrap">
 
-<div class="report-grid">
+    <!-- Header -->
+    <div class="rh-header">
+        <h1>📊 Intelligence Center</h1>
+        <p>Official society accounting and real-time audit summaries.</p>
+    </div>
 
-    <!-- 1. BALANCE SHEET -->
-    <div class="report-card">
-        <div class="report-title"><span>📉</span> Revenue vs Expenses</div>
+    <div class="report-grid">
 
-        {% set total_in = finance.total_maint + finance.total_misc %}
-        {% set exp_percent = (finance.total_exp / total_in * 100) if total_in > 0 else 0 %}
-
-        <div class="ledger-row">
-            <span style="color: #64748b;">Total Inflow</span>
-            <strong class="amount-large" style="color: #10b981; font-size: 18px;">₹{{ "{:,.2f}".format(total_in) }}</strong>
-        </div>
-        <div class="ledger-row">
-            <span style="color: #64748b;">Total Outflow</span>
-            <strong class="amount-large" style="color: #f43f5e; font-size: 18px;">₹{{ "{:,.2f}".format(finance.total_exp) }}</strong>
-        </div>
-
-        <div class="progress-container">
-            <div class="progress-labels">
-                <span>REVENUE UTILIZATION</span>
-                <span>{{ exp_percent | round(1) }}% SPENT</span>
+        <!-- 1. Revenue vs Expenses -->
+        <div class="report-card">
+            <div class="report-title">
+                <span class="icon">📉</span> Revenue vs Expenses
             </div>
-            <div class="progress-track">
-                <div style="width: {{ 100-exp_percent }}%; background: #10b981;"></div>
-                <div style="width: {{ exp_percent }}%; background: #f43f5e;"></div>
+
+            {% set total_in = finance.total_maint + finance.total_misc %}
+            {% set exp_percent = (finance.total_exp / total_in * 100) if total_in > 0 else 0 %}
+
+            <div class="ledger-row">
+                <span class="row-label">Total Inflow</span>
+                <strong class="row-val c-green">₹{{ "{:,.2f}".format(total_in) }}</strong>
+            </div>
+            <div class="ledger-row">
+                <span class="row-label">Total Outflow</span>
+                <strong class="row-val c-red">₹{{ "{:,.2f}".format(finance.total_exp) }}</strong>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-labels">
+                    <span>Revenue Utilization</span>
+                    <span>{{ exp_percent | round(1) }}% Spent</span>
+                </div>
+                <div class="progress-track">
+                    <div style="width: {{ 100 - exp_percent }}%; background: #10b981;"></div>
+                    <div style="width: {{ exp_percent }}%; background: #f43f5e;"></div>
+                </div>
+            </div>
+
+            <div class="treasury-box">
+                <span class="treasury-label">Net Treasury</span>
+                <span class="treasury-amount">₹{{ "{:,.2f}".format(total_in - finance.total_exp) }}</span>
             </div>
         </div>
 
-        <div class="ledger-row" style="border: none; background: #f8fafc; border-radius: 16px; padding: 20px; margin-top: 10px;">
-            <span style="font-weight: 800; color: #475569; font-size: 15px;">NET TREASURY</span>
-            <strong class="treasury-amount" style="color: #4e46e5; font-size: 26px; letter-spacing: -1px;">₹{{ "{:,.2f}".format(total_in - finance.total_exp) }}</strong>
-        </div>
-    </div>
-
-    <!-- 2. AUDIT COMPLIANCE -->
-    <div class="report-card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; display: flex; flex-direction: column; justify-content: center;">
-        <div class="report-title" style="color: white; opacity: 0.8;"><span>📜</span> Registry Compliance</div>
-        <p style="font-size: 15px; color: #94a3b8; line-height: 1.6; margin-bottom: 30px;">
-            Generate and export statutory forms required for building registration, tax filing, and AGM audit meetings.
-        </p>
-        <div class="compliance-grid">
-            <a href="#" class="btn-outline">Download Form 1</a>
-            <a href="#" class="btn-outline">Download Form 28</a>
-        </div>
-    </div>
-
-    <!-- 3. MEMBER ARREARS -->
-    <div class="report-card span-full" style="grid-column: span 2; padding: 10px; margin-top: 10px;">
-        <div style="padding: 20px 20px 10px 20px;">
-            <div class="report-title"><span>🚩</span> Priority: Outstanding Arrears</div>
+        <!-- 2. Registry Compliance -->
+        <div class="report-card dark-card">
+            <div class="report-title light">
+                <span class="icon">📜</span> Registry Compliance
+            </div>
+            <p>Generate and export statutory forms required for building registration, tax filing, and AGM audit meetings.</p>
+            <div class="compliance-grid">
+                <a href="#" class="btn-outline">Download Form 1</a>
+                <a href="#" class="btn-outline">Download Form 28</a>
+            </div>
         </div>
 
-        <div class="table-scroll">
-            <table class="modern-table">
-                <thead>
-                    <tr>
-                        <th>Resident Name</th>
-                        <th>Unit ID</th>
-                        <th>Period</th>
-                        <th style="text-align: right;">Amount Due</th>
-                        <th style="text-align: right;">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if dues %}
-                        {% for d in dues %}
+        <!-- 3. Outstanding Arrears -->
+        <div class="report-card no-pad span-2">
+            <div class="card-head">
+                <div class="report-title">
+                    <span class="icon">🚩</span> Priority: Outstanding Arrears
+                </div>
+            </div>
+            <span class="scroll-hint">← Scroll to see all columns</span>
+            <div class="table-scroll">
+                <table class="modern-table">
+                    <thead>
                         <tr>
-                            <td style="font-weight: 700; color: #1e293b; white-space: nowrap;">{{ d.full_name }}</td>
-                            <td><span style="background: #eef2ff; color: #4e46e5; padding: 4px 12px; border-radius: 8px; font-weight: 800; white-space: nowrap;">{{ d.flat_number }}</span></td>
-                            <td style="color: #64748b; font-weight: 500; white-space: nowrap;">{{ d.month }} {{ d.year }}</td>
-                            <td style="text-align: right; color: #f43f5e; font-weight: 800; font-size: 15px; white-space: nowrap;">₹{{ "{:,.2f}".format(d.amount) }}</td>
-                            <td style="text-align: right;">
-                                <button onclick="payOnline('{{ d.id }}', '{{ d.amount }}', '{{ d.flat_number }}')" class="btn-pay">Pay Now</button>
-                            </td>
+                            <th>Resident Name</th>
+                            <th>Unit ID</th>
+                            <th>Period</th>
+                            <th style="text-align: right;">Amount Due</th>
+                            <th style="text-align: right;">Action</th>
                         </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 60px 20px; color: #94a3b8; font-weight: 600; font-size: 15px;">
-                                ✨ All clear! Every member has settled their dues.
-                            </td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% if dues %}
+                            {% for d in dues %}
+                            <tr>
+                                <td style="font-weight: 700; color: #1e293b;">{{ d.full_name }}</td>
+                                <td><span class="badge badge-unit">{{ d.flat_number }}</span></td>
+                                <td style="color: #64748b; font-weight: 500;">{{ d.month }} {{ d.year }}</td>
+                                <td style="text-align: right; color: #f43f5e; font-weight: 800; font-size: 15px;">₹{{ "{:,.2f}".format(d.amount) }}</td>
+                                <td style="text-align: right;">
+                                    <button
+                                        onclick="payOnline(this, '{{ d.id }}', '{{ d.amount }}', '{{ d.flat_number }}')"
+                                        class="btn-pay"
+                                        data-bill-id="{{ d.id }}">
+                                        Pay Now
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="empty-state">✨ All clear — every member has settled their dues.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <!-- 4. GENERAL LEDGER -->
-    <div class="report-card span-full" style="grid-column: span 2; padding: 10px; margin-top: 10px;">
-        <div style="padding: 20px 20px 10px 20px;">
-            <div class="report-title"><span>📖</span> General Ledger & Day Book</div>
+        <!-- 4. General Ledger -->
+        <div class="report-card no-pad span-2">
+            <div class="card-head">
+                <div class="report-title">
+                    <span class="icon">📖</span> General Ledger & Day Book
+                </div>
+            </div>
+            <span class="scroll-hint">← Scroll to see all columns</span>
+            <div class="table-scroll">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Source / Category</th>
+                            <th>Notes</th>
+                            <th style="text-align: right;">Credit / Debit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% if ledger %}
+    {% for entry in ledger %}
+    <tr>
+        <td>
+            <div class="date-cell">
+                <span class="date">{{ entry.entry_date.strftime('%Y-%m-%d') }}</span>
+                <span class="time">{{ entry.entry_date.strftime('%H:%M:%S') }}</span>
+            </div>
+        </td>
+        <td>
+            <span class="badge {% if entry.type == 'IN' %}badge-in{% else %}badge-out{% endif %}">{{ entry.type }}</span>
+        </td>
+        <td style="font-weight: 700; color: #334155;">{{ entry.source }}</td>
+        <td class="td-notes">{{ entry.description or '—' }}</td>
+        <td style="text-align: right; font-weight: 800; font-size: 15px; color: {% if entry.type == 'IN' %}#10b981{% else %}#ef4444{% endif %};">
+            {% if entry.type == 'IN' %}+{% else %}−{% endif %} ₹{{ "{:,.2f}".format(entry.amount) }}
+        </td>
+    </tr>
+    {% endfor %}
+{% else %}
+                            <tr>
+                                <td colspan="6" class="empty-state">No transactions recorded in this period.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="table-scroll">
-            <table class="modern-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>Source / Category</th>
-                        <th>Notes</th>
-                        <th style="text-align: right;">Credit / Debit</th>
-                        <th>Invoice</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if ledger %}
-                        {% for entry in ledger %}
-                        <tr>
-                            <td style="color: #94a3b8; font-weight: 600; white-space: nowrap;">{{ entry.entry_date }}</td>
-                            <td><span class="{% if entry.type == 'IN' %}badge-in{% else %}badge-out{% endif %}">{{ entry.type }}</span></td>
-                            <td style="font-weight: 700; color: #334155; white-space: nowrap;">{{ entry.source }}</td>
-                            <td style="color: #64748b; font-size: 13px; max-width: 200px;">{{ entry.description or '-' }}</td>
-                            <td style="text-align: right; font-weight: 800; font-size: 15px; white-space: nowrap; color: {% if entry.type == 'IN' %}#10b981{% else %}#ef4444{% endif %};">
-                                {% if entry.type == 'IN' %}+{% else %}-{% endif %} ₹{{ "{:,.2f}".format(entry.amount) }}
-                            </td>
-                            <td style="white-space: nowrap;">Invoice</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="6" style="text-align: center; padding: 60px 20px; color: #94a3b8;">
-                                No transactions recorded in this period.
-                            </td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-</div>
+    </div><!-- /.report-grid -->
+</div><!-- /.rh-wrap -->
 
 <script>
-function payOnline(billId, amount, flatNum) {
-    fetch('/owners/create-order/' + billId, {
+/**
+ * Route candidates — tried in order until one returns HTTP 200 + status:'success'
+ */
+var ROUTE_CANDIDATES = [
+    '/owners/create-payment-order/',
+    '/owners/create-order/',
+    '/create-payment-order/',
+    '/create-order/'
+];
+
+/**
+ * ─── FIXED: setPayBtnStateSingle ───────────────────────────────────────────
+ * Controls state of ONE specific button (the one the user clicked).
+ * Previously this function was called but never defined, causing a JS error
+ * that silently killed the Pay Now flow before any fetch was made.
+ */
+function setPayBtnStateSingle(btn, state) {
+    if (!btn) return;
+    switch (state) {
+        case true:
+        case 'ready':
+            btn.disabled = false;
+            btn.textContent = 'Pay Now';
+            btn.style.background = '#4e46e5';
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.style.boxShadow = '0 3px 10px rgba(79,70,229,0.25)';
+            break;
+        case 'processing':
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing…';
+            btn.style.background = '#d97706';
+            btn.style.opacity = '1';
+            btn.style.cursor = 'default';
+            btn.style.boxShadow = '0 3px 10px rgba(217,119,6,0.25)';
+            break;
+        case 'verifying':
+            btn.disabled = true;
+            btn.textContent = '✅ Verifying…';
+            btn.style.background = '#059669';
+            btn.style.opacity = '1';
+            btn.style.cursor = 'default';
+            btn.style.boxShadow = '0 3px 10px rgba(5,150,105,0.25)';
+            break;
+        default: // false / 'loading'
+            btn.disabled = true;
+            btn.textContent = 'Loading…';
+            btn.style.background = '#94a3b8';
+            btn.style.opacity = '0.8';
+            btn.style.cursor = 'default';
+            btn.style.boxShadow = 'none';
+    }
+}
+
+/**
+ * ─── payOnline ─────────────────────────────────────────────────────────────
+ * Entry point — called by the Pay Now button onclick.
+ * Stores reference to the clicked button so we can restore it on failure.
+ */
+function payOnline(btn, billId, amount, flatNum) {
+    if (!billId || billId === 'None' || billId === '') {
+        alert('Error: Bill ID is missing.\n\nMake sure d.id is set correctly in your Jinja template.\nCheck that your Bill model has an "id" field.');
+        return;
+    }
+    console.log('[SocietyHQ] payOnline → billId:', billId, '| amount:', amount, '| flat:', flatNum);
+
+    // Disable the clicked button immediately so user can't double-click
+    setPayBtnStateSingle(btn, 'loading');
+
+    // Store the button reference on window so tryNextRoute / openRazorpay can access it
+    window._activePayBtn = btn;
+
+    tryNextRoute(billId, flatNum, 0);
+}
+
+/**
+ * ─── tryNextRoute ──────────────────────────────────────────────────────────
+ * Walks through ROUTE_CANDIDATES until one returns a valid response.
+ */
+function tryNextRoute(billId, flatNum, idx) {
+    if (idx >= ROUTE_CANDIDATES.length) {
+        // All routes exhausted — restore button and tell the developer
+        setPayBtnStateSingle(window._activePayBtn, 'ready');
+        alert(
+            '❌ Payment Error: Could not reach any known route.\n\n' +
+            'Routes tried:\n' + ROUTE_CANDIDATES.map(function(r){ return '  • ' + r + billId; }).join('\n') + '\n\n' +
+            'Fix: Open your owners/routes.py and check the exact @bp.route() URL, ' +
+            'then update ROUTE_CANDIDATES at the top of the <script> in your template.'
+        );
+        return;
+    }
+
+    var url = ROUTE_CANDIDATES[idx] + billId;
+    console.log('[SocietyHQ] Trying route:', url);
+
+    // ── Get CSRF token from meta tag (Flask-WTF) or cookie ──
+    var csrfToken = '';
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        csrfToken = csrfMeta.getAttribute('content');
+    } else {
+        // Fallback: read from cookie
+        var match = document.cookie.match(/csrf_token=([^;]+)/);
+        if (match) csrfToken = match[1];
+    }
+
+    fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-        if (data.status === 'success') {
-            var options = {
-                "key": data.key,
-                "amount": data.amount,
-                "currency": "INR",
-                "name": "SocietyHQ",
-                "description": "Maintenance Payment - Unit " + flatNum,
-                "order_id": data.order_id,
-                "handler": function (response) { verifyPayment(billId, response); },
-                "prefill": { "name": data.full_name, "email": data.email },
-                "theme": { "color": "#4e46e5" }
-            };
-            var rzp = new Razorpay(options);
-            rzp.open();
-        } else {
-            alert("Error: " + (data.message || "Failed to initiate payment."));
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         }
+    })
+    .then(function(res) {
+        console.log('[SocietyHQ] Route', url, '→ HTTP', res.status);
+        if (res.status === 404) {
+            // This route doesn't exist — silently try the next one
+            tryNextRoute(billId, flatNum, idx + 1);
+            return null;
+        }
+        if (!res.ok) {
+            return res.text().then(function(body) {
+                throw new Error('HTTP ' + res.status + ' from ' + url + '\n\nServer said:\n' + body.slice(0, 400));
+            });
+        }
+        return res.json();
+    })
+    .then(function(data) {
+        if (!data) return; // 404 branch — already retrying
+
+        console.log('[SocietyHQ] Response from', url, ':', data);
+
+        if (data.status === 'success') {
+            console.log('[SocietyHQ] ✅ Working route:', url);
+            openRazorpay(data, billId, flatNum);
+        } else {
+            setPayBtnStateSingle(window._activePayBtn, 'ready');
+            alert('❌ Server error: ' + (data.message || JSON.stringify(data)));
+        }
+    })
+    .catch(function(err) {
+        setPayBtnStateSingle(window._activePayBtn, 'ready');
+        console.error('[SocietyHQ] Fetch error on', url, ':', err);
+        alert('❌ Payment failed.\n\n' + err.message + '\n\nOpen browser console (F12) for details.');
     });
 }
 
+/**
+ * ─── openRazorpay ──────────────────────────────────────────────────────────
+ * Opens the Razorpay checkout modal.
+ */
+function openRazorpay(data, billId, flatNum) {
+    if (typeof Razorpay === 'undefined') {
+        setPayBtnStateSingle(window._activePayBtn, 'ready');
+        alert('❌ Razorpay script failed to load.\nCheck your internet connection and reload the page.');
+        return;
+    }
+
+    var options = {
+        key:         data.key,
+        amount:      data.amount,
+        currency:    'INR',
+        name:        'SocietyHQ',
+        description: 'Maintenance Payment - Unit ' + flatNum,
+        order_id:    data.order_id,
+        handler: function(response) {
+            // Payment captured — now verify on the server
+            setPayBtnStateSingle(window._activePayBtn, 'verifying');
+            verifyPayment(billId, response);
+        },
+        prefill: {
+            name:  data.full_name  || '',
+            email: data.email      || ''
+        },
+        theme: { color: '#4e46e5' },
+        modal: {
+            ondismiss: function() {
+                // User closed the modal — restore the button
+                setPayBtnStateSingle(window._activePayBtn, 'ready');
+            }
+        }
+    };
+
+    setPayBtnStateSingle(window._activePayBtn, 'processing');
+    new Razorpay(options).open();
+}
+
+/**
+ * ─── verifyPayment ─────────────────────────────────────────────────────────
+ * Sends Razorpay signature back to server for HMAC verification.
+ */
 function verifyPayment(billId, rzpResponse) {
+    // ── Get CSRF token ──
+    var csrfToken = '';
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        csrfToken = csrfMeta.getAttribute('content');
+    } else {
+        var match = document.cookie.match(/csrf_token=([^;]+)/);
+        if (match) csrfToken = match[1];
+    }
+
     fetch('/owners/verify-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
         body: JSON.stringify({
-            bill_id: billId,
-            razorpay_order_id: rzpResponse.razorpay_order_id,
+            bill_id:             billId,
+            razorpay_order_id:   rzpResponse.razorpay_order_id,
             razorpay_payment_id: rzpResponse.razorpay_payment_id,
-            razorpay_signature: rzpResponse.razorpay_signature
+            razorpay_signature:  rzpResponse.razorpay_signature
         })
     })
-    .then(function(res) { return res.json(); })
+    .then(function(res) {
+        if (!res.ok) throw new Error('Verify endpoint returned HTTP ' + res.status);
+        return res.json();
+    })
     .then(function(data) {
         if (data.status === 'success') {
-            alert("Payment Successful! Ledger Updated. ✅");
+            alert('✅ Payment Successful! Ledger Updated.');
             window.location.reload();
         } else {
-            alert("Verification failed. Please contact support.");
+            setPayBtnStateSingle(window._activePayBtn, 'ready');
+            alert('❌ Verification failed: ' + (data.message || 'Unknown error. Contact support.'));
         }
+    })
+    .catch(function(err) {
+        setPayBtnStateSingle(window._activePayBtn, 'ready');
+        console.error('[SocietyHQ] Verify error:', err);
+        alert('❌ Verification error: ' + err.message);
     });
+}
+
+/**
+ * ─── setPayBtnState (global — affects ALL buttons) ─────────────────────────
+ * Kept for backwards compatibility in case used elsewhere.
+ */
+function setPayBtnState(state) {
+    document.querySelectorAll('.btn-pay').forEach(function(btn) {
+        setPayBtnStateSingle(btn, state);
+    });
+}
+
+// Legacy alias
+function showPayBtn(billId, enabled) {
+    setPayBtnStateSingle(window._activePayBtn, enabled ? 'ready' : 'loading');
 }
 </script>
 

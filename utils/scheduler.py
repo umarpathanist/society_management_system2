@@ -1,13 +1,13 @@
 # from datetime import datetime
 # from database.connection import get_db_connection
-# from psycopg2.extras import RealDictCursor
+# 
 # from maintenance.repository import MaintenanceRepository
 # from utils.mail import send_maintenance_reminder
 
 # from datetime import datetime
 # from flask import current_app
 # from database.connection import get_db_connection
-# from psycopg2.extras import RealDictCursor
+# 
 # from maintenance.repository import MaintenanceRepository
 # from utils.mail import send_maintenance_reminder
 
@@ -21,7 +21,7 @@
 #         print(f"--- [SCHEDULER START: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ---")
         
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
         
 #         # Determine Current Billing Cycle
 #         now = datetime.now()
@@ -101,7 +101,7 @@
 from datetime import datetime
 from flask import current_app
 from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
+
 from maintenance.repository import MaintenanceRepository
 from utils.mail import send_maintenance_reminder
 
@@ -116,7 +116,7 @@ def auto_generate_maintenance(app):
         print(f"--- [SCHEDULER START: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ---")
 
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
 
         # Determine Current Billing Cycle
         now = datetime.now()
@@ -246,7 +246,7 @@ def check_ticket_sla(app):
 
 from datetime import datetime
 from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
+
 from flask_mail import Message
 from extensions import mail
 from utils.report_gen import generate_csv_report # Import correctly
@@ -260,7 +260,7 @@ def email_scheduled_reports(app):
         
         conn = get_db_connection()
         # FIXED: Cursor must be defined correctly on one line
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
 
         try:
             # 1. Find all active Society Admins

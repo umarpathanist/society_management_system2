@@ -1,5 +1,5 @@
 from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
+
 
 class AuthRepository:
     """
@@ -11,7 +11,7 @@ class AuthRepository:
     @staticmethod
     def get_user_by_email(email):
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
 
         # Using 'full_name' exactly as it appears in your CREATE TABLE users script
         cur.execute("""
@@ -48,7 +48,7 @@ class UserRepository:
         'roles' should be a tuple, e.g., ('owner', 'tenant')
         """
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         
         query = """
             SELECT id, full_name, email, role 
@@ -112,7 +112,7 @@ class UserRepository:
     # @staticmethod
     # def get_by_email(email):
     #     conn = get_db_connection()
-    #     cur = conn.cursor(cursor_factory=RealDictCursor)
+    #     cur = conn.cursor()
     #     # Fetching from the unified 'users' table
     #     cur.execute("SELECT * FROM users WHERE email = %s", (email,))
     #     user = cur.fetchone()
@@ -126,7 +126,7 @@ class UserRepository:
     @staticmethod
     def get_by_email(email):
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (email,))
             return cur.fetchone()
@@ -137,7 +137,7 @@ class UserRepository:
     @staticmethod
     def get_by_id(user_id):
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
             return cur.fetchone()

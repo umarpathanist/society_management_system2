@@ -71,7 +71,6 @@
 
     .col-desc { font-size: 13px; color: #64748b; padding-right: 20px; line-height: 1.4; font-weight: 500; }
 
-    /* Desktop amount column */
     .col-amount-desktop {
         text-align: right;
         font-size: 22px;
@@ -85,7 +84,6 @@
     .btn-back { background: #f1f5f9; color: #64748b; padding: 12px 20px; border-radius: 14px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.2s; white-space: nowrap; }
     .btn-back:hover { background: #e2e8f0; color: #1e293b; }
 
-    /* Mobile labels */
     .mobile-label {
         display: none;
         font-size: 10px;
@@ -96,12 +94,10 @@
         margin-bottom: 3px;
     }
 
-    /* Mobile top row — hidden on desktop */
     .card-top-row-mobile {
         display: none;
     }
 
-    /* ── Tablet (≤ 900px) ── */
     @media (max-width: 900px) {
         .ledger-labels,
         .transaction-card {
@@ -114,7 +110,6 @@
         .cat-name { font-size: 14px; }
     }
 
-    /* ── Mobile (≤ 640px) ── */
     @media (max-width: 640px) {
         .ledger-labels { display: none; }
 
@@ -129,14 +124,12 @@
 
         .transaction-card:hover { transform: none; }
 
-        /* Show mobile top row */
         .card-top-row-mobile {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        /* Hide desktop date and amount columns */
         .col-date { display: none; }
         .col-amount-desktop { display: none; }
 
@@ -166,10 +159,6 @@
 
     <div class="ledger-header-actions">
         {% if session.user.role == 'super_admin' %}
-            <a href="javascript:history.back()" class="btn-back">← Back</a>
-        {% endif %}
-
-        {% if session.user.role == 'super_admin' %}
             {% if selected_soc %}
                 <a href="{{ url_for('expenses.add_expense', society_id=selected_soc) }}" class="btn-action">+ Record Expense</a>
             {% else %}
@@ -181,7 +170,6 @@
     </div>
 </div>
 
-<!-- Column labels (desktop/tablet) -->
 <div class="ledger-labels">
     <div>Date</div>
     <div>Category</div>
@@ -194,14 +182,16 @@
         {% for r in records %}
         <div class="transaction-card">
 
-            <!-- Mobile top row: date + amount (only on mobile) -->
+            <!-- Mobile top row -->
             <div class="card-top-row-mobile">
-                <span style="font-size:14px; color:#94a3b8; font-weight:600;">{{ r.expense_date }}</span>
+                <!-- ✅ FIXED: expense_date → spent_at -->
+                <span style="font-size:14px; color:#94a3b8; font-weight:600;">{{ r.spent_at }}</span>
                 <span style="font-size:18px; font-weight:800; color:#ef4444;">- ₹{{ "{:,.2f}".format(r.amount) }}</span>
             </div>
 
-            <!-- 1. DATE (desktop/tablet only) -->
-            <div class="col-date">{{ r.expense_date }}</div>
+            <!-- 1. DATE -->
+            <!-- ✅ FIXED: expense_date → spent_at -->
+            <div class="col-date">{{ r.spent_at }}</div>
 
             <!-- 2. CATEGORY -->
             <div class="col-category">
@@ -213,10 +203,11 @@
             <!-- 3. DESCRIPTION -->
             <div class="col-desc">
                 <span class="mobile-label">Description</span>
-                {{ r.description }}
+                <!-- ✅ FIXED: r.description → r.title -->
+                {{ r.title if r.title else 'N/A' }}
             </div>
 
-            <!-- 4. AMOUNT (desktop/tablet only) -->
+            <!-- 4. AMOUNT -->
             <div class="col-amount-desktop">- ₹{{ "{:,.2f}".format(r.amount) }}</div>
 
         </div>

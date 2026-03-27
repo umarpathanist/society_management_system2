@@ -3,7 +3,7 @@ from blocks.repository import BlockRepository
 from societies.service import SocietyService
 from database.connection import get_db_connection
 import psycopg2
-from psycopg2.extras import RealDictCursor
+
 
 
 
@@ -40,7 +40,7 @@ class BlockService:
 
     def get_by_society(society_id):
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
 
         cur.execute("""
             SELECT

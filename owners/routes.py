@@ -23,19 +23,14 @@ owners_bp = Blueprint("owners", __name__, url_prefix="/owners")
 # ---------------------------------------------------------
 # 1. ADMIN: LIST OWNERS & TENANTS
 # ---------------------------------------------------------
-
 @owners_bp.route("/list")
 @login_required
 @role_required("admin", "super_admin")
 def list_owners():
-    """Fetches all residents for the admin list view."""
     user = session.get("user")
     user_role = user.get("role").lower()
     society_id = session.get("society_id")
-
-    # Super Admin sees everyone, local Admin sees only their society
     target_soc = None if user_role == "super_admin" else society_id
-
     users_list = OwnerRepository.get_users_by_society_and_roles(target_soc, ("owner", "tenant"))
     return render_template("owners/list.html", users=users_list)
 
@@ -43,12 +38,10 @@ def list_owners():
 # ---------------------------------------------------------
 # 2. RESIDENT: DASHBOARD & DUES
 # ---------------------------------------------------------
-
 @owners_bp.route("/my-flat")
 @login_required
 @role_required("owner", "tenant")
 def my_flat():
-    """Shows the resident's flat and account summary."""
     user = session["user"]
     summary = OwnerService.get_owner_account_summary(user["id"], user["role"])
     return render_template("owners/my_flat.html", summary=summary)
@@ -58,7 +51,6 @@ def my_flat():
 @login_required
 @role_required("owner", "tenant")
 def my_maintenance():
-    """Shows the resident's maintenance dues."""
     user = session["user"]
     maintenance = OwnerService.get_my_maintenance(user["id"], user["role"])
     return render_template("owners/my_maintenance.html", maintenance=maintenance)
@@ -67,11 +59,9 @@ def my_maintenance():
 # ---------------------------------------------------------
 # 3. RAZORPAY PAYMENT: CREATE ORDER & VERIFY
 # ---------------------------------------------------------
-
 @owners_bp.route("/create-payment-order/<int:bill_id>", methods=["POST"])
 @login_required
 def create_payment_order(bill_id):
-    """Creates a Razorpay payment order for a given bill."""
     bill = MaintenanceRepository.get_full_invoice_data(bill_id)
     if not bill:
         return jsonify({"status": "error", "message": "Bill not found"}), 404
@@ -81,17 +71,13 @@ def create_payment_order(bill_id):
             current_app.config['RAZORPAY_KEY_ID'],
             current_app.config['RAZORPAY_KEY_SECRET']
         ))
-
         amount_paise = int(float(bill['amount']) * 100)
-
         order = client.order.create(data={
             "amount": amount_paise,
             "currency": "INR",
             "receipt": f"bill_{bill_id}"
         })
-
         MaintenanceRepository.save_order_id(bill_id, order['id'])
-
         return jsonify({
             "status": "success",
             "order_id": order['id'],
@@ -100,7 +86,6 @@ def create_payment_order(bill_id):
             "full_name": bill['recipient_name'],
             "email": bill['recipient_email']
         })
-
     except Exception as e:
         print(f"ORDER CREATION ERROR: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -109,8 +94,19 @@ def create_payment_order(bill_id):
 @owners_bp.route("/verify-payment", methods=["POST"])
 @login_required
 def verify_payment():
-    """Verifies Razorpay signature, marks bill as paid, sends receipt email."""
-    data = request.get_json()
+    # ✅ FIXED: Handle missing or empty JSON body
+    data = request.get_json(silent=True)
+
+    if not data:
+        print("VERIFY PAYMENT ERROR: No JSON data received")
+        return jsonify({"status": "error", "message": "No payment data received"}), 400
+
+    # ✅ FIXED: Validate required fields before processing
+    required_fields = ['razorpay_order_id', 'razorpay_payment_id', 'razorpay_signature', 'bill_id']
+    missing = [f for f in required_fields if not data.get(f)]
+    if missing:
+        print(f"VERIFY PAYMENT ERROR: Missing fields: {missing}")
+        return jsonify({"status": "error", "message": f"Missing fields: {missing}"}), 400
 
     try:
         client = razorpay.Client(auth=(
@@ -120,9 +116,9 @@ def verify_payment():
 
         # 1. Verify Razorpay signature
         client.utility.verify_payment_signature({
-            'razorpay_order_id': data['razorpay_order_id'],
+            'razorpay_order_id':   data['razorpay_order_id'],
             'razorpay_payment_id': data['razorpay_payment_id'],
-            'razorpay_signature': data['razorpay_signature']
+            'razorpay_signature':  data['razorpay_signature']
         })
 
         bill_id = data['bill_id']
@@ -140,16 +136,16 @@ def verify_payment():
         # 4. Build PDF context
         context = {
             "society": {
-                "name": invoice_data['society_name'],
+                "name":    invoice_data['society_name'],
                 "address": invoice_data['society_address']
             },
             "user": {
                 "full_name": invoice_data['recipient_name'],
-                "email": invoice_data['recipient_email']
+                "email":     invoice_data['recipient_email']
             },
             "flat": {
                 "flat_number": invoice_data['flat_number'],
-                "block_name": invoice_data['block_name']
+                "block_name":  invoice_data['block_name']
             },
             "maintenance": invoice_data,
             "date_today": datetime.now().strftime('%B %d, %Y')
@@ -157,7 +153,6 @@ def verify_payment():
 
         # 5. Generate and email PDF receipt
         pdf = generate_pdf_blob('maintenance/invoice_template.html', context)
-
         if invoice_data.get('recipient_email'):
             send_email_with_pdf(
                 invoice_data['recipient_email'],
@@ -171,10 +166,10 @@ def verify_payment():
         treasurer = TreasurerRepository.get_treasurer_by_society(invoice_data['society_id'])
         if treasurer:
             NotificationRepository.create(
-                user_id=treasurer['id'],
-                title="Payment Received 💰",
-                message=f"Flat {invoice_data['flat_number']} ({invoice_data['recipient_name']}) paid via Razorpay.",
-                notif_type="finance"
+                user_id   = treasurer['id'],
+                title     = "Payment Received 💰",
+                message   = f"Flat {invoice_data['flat_number']} ({invoice_data['recipient_name']}) paid via Razorpay.",
+                notif_type= "finance"
             )
 
         return jsonify({"status": "success"})
@@ -187,20 +182,12 @@ def verify_payment():
 # ---------------------------------------------------------
 # 4. SIMULATION PAYMENT (For Testing Without Razorpay)
 # ---------------------------------------------------------
-
 @owners_bp.route("/pay-simulation/<int:maintenance_id>", methods=["POST"])
 @login_required
 @role_required("owner", "tenant")
 def pay_bill(maintenance_id):
-    """
-    Simulated payment flow (no real gateway):
-    1. Marks bill as paid with a dummy transaction ID.
-    2. Notifies the resident.
-    3. Notifies the treasurer.
-    4. Generates and emails a PDF receipt.
-    """
     try:
-        # 1. Mark as paid with a dummy transaction ID
+        # 1. Mark as paid with dummy transaction ID
         dummy_p_id = f"PAY_{secrets.token_hex(4).upper()}"
         MaintenanceRepository.mark_as_paid(
             maintenance_id,
@@ -217,10 +204,10 @@ def pay_bill(maintenance_id):
 
         # 3a. Notify the resident
         NotificationRepository.create(
-            user_id=session["user"]["id"],
-            title="Payment Successful ✅",
-            message=f"Maintenance for {invoice_data['month']} {invoice_data['year']} is cleared. Receipt generated.",
-            notif_type="payment"
+            user_id   = session["user"]["id"],
+            title     = "Payment Successful ✅",
+            message   = f"Maintenance for {invoice_data['month']} {invoice_data['year']} is cleared. Receipt generated.",
+            notif_type= "payment"
         )
 
         # 3b. Notify the treasurer
@@ -228,40 +215,39 @@ def pay_bill(maintenance_id):
         if treasurer:
             payment_date = datetime.now().strftime("%d-%m-%Y")
             NotificationRepository.create(
-                user_id=treasurer['id'],
-                title="Payment Received 💰",
-                message=f"Flat {invoice_data['flat_number']} ({invoice_data['recipient_name']}) paid ₹{invoice_data['amount']} on {payment_date}.",
-                notif_type="finance"
+                user_id   = treasurer['id'],
+                title     = "Payment Received 💰",
+                message   = f"Flat {invoice_data['flat_number']} ({invoice_data['recipient_name']}) paid ₹{invoice_data['amount']} on {payment_date}.",
+                notif_type= "finance"
             )
 
         # 4. Generate and email PDF receipt
         context = {
             "society": {
-                "name": invoice_data['society_name'],
+                "name":    invoice_data['society_name'],
                 "address": invoice_data['society_address']
             },
             "user": {
                 "full_name": invoice_data['recipient_name'],
-                "email": invoice_data['recipient_email']
+                "email":     invoice_data['recipient_email']
             },
             "flat": {
                 "flat_number": invoice_data['flat_number'],
-                "block_name": invoice_data['block_name']
+                "block_name":  invoice_data['block_name']
             },
             "maintenance": invoice_data,
             "date_today": datetime.now().strftime('%B %d, %Y')
         }
 
         pdf_blob = generate_pdf_blob('maintenance/invoice_template.html', context)
-
         if pdf_blob:
             filename = f"Receipt_{invoice_data['flat_number']}_{invoice_data['month']}.pdf"
             send_email_with_pdf(
-                recipient_email=invoice_data['recipient_email'],
-                recipient_name=invoice_data['recipient_name'],
-                pdf_data=pdf_blob,
-                filename=filename,
-                maintenance=invoice_data
+                recipient_email = invoice_data['recipient_email'],
+                recipient_name  = invoice_data['recipient_name'],
+                pdf_data        = pdf_blob,
+                filename        = filename,
+                maintenance     = invoice_data
             )
             flash(f"Payment successful! Receipt emailed to {invoice_data['recipient_email']}. ✅", "success")
         else:
@@ -277,25 +263,22 @@ def pay_bill(maintenance_id):
 # ---------------------------------------------------------
 # 5. CRUD: ADD, EDIT, DELETE OWNERS
 # ---------------------------------------------------------
-
 @owners_bp.route("/add", methods=["GET", "POST"])
 @login_required
 @role_required("admin", "super_admin")
 def add_owner():
-    """Adds a new owner or tenant."""
     if request.method == "POST":
         try:
             OwnerService.create_owner_or_tenant({
-                "full_name": request.form.get("full_name"),
-                "email": request.form.get("email"),
-                "role": request.form.get("role"),
+                "full_name":  request.form.get("full_name"),
+                "email":      request.form.get("email"),
+                "role":       request.form.get("role"),
                 "society_id": session.get("society_id")
             })
             flash("User added successfully!", "success")
             return redirect(url_for("owners.list_owners"))
         except Exception as e:
             flash(f"Error: {str(e)}", "danger")
-
     return render_template("owners/add.html")
 
 
@@ -303,21 +286,18 @@ def add_owner():
 @login_required
 @role_required("admin", "super_admin")
 def edit_owner(id):
-    """Edits an existing owner or tenant."""
     user_to_edit = OwnerService.get_user_details(id)
-
     if request.method == "POST":
         try:
             OwnerService.update_user(id, {
                 "full_name": request.form.get("full_name"),
-                "email": request.form.get("email"),
-                "role": request.form.get("role")
+                "email":     request.form.get("email"),
+                "role":      request.form.get("role")
             })
             flash("User updated successfully!", "success")
             return redirect(url_for("owners.list_owners"))
         except Exception as e:
             flash(f"Error: {str(e)}", "danger")
-
     return render_template("owners/edit.html", user=user_to_edit)
 
 
@@ -325,7 +305,6 @@ def edit_owner(id):
 @login_required
 @role_required("admin", "super_admin")
 def delete_owner(id):
-    """Deletes an owner or tenant."""
     OwnerService.delete_user(id)
     flash("User removed successfully.", "success")
     return redirect(url_for("owners.list_owners"))

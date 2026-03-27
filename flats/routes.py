@@ -145,6 +145,7 @@ from database.connection import get_db_connection
 from flats.repository import FlatRepository
 from blocks.repository import BlockRepository
 from owners.repository import OwnerRepository
+from flask import jsonify
 
 flats_bp = Blueprint("flats", __name__, url_prefix="/flats")
 

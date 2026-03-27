@@ -1,5 +1,5 @@
 from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
+
 
 class NotificationRepository:
 
@@ -26,7 +26,7 @@ class NotificationRepository:
     def get_all_by_user(user_id):
         """Fetches all notifications for a specific user."""
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT id, title, message, notif_type, is_read, created_at 
@@ -119,7 +119,7 @@ class NotificationRepository:
 def get_admins_by_society(society_id):
     """Returns a list of user IDs for all Admins in a specific society."""
     conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur = conn.cursor()
     try:
         cur.execute("SELECT id FROM users WHERE society_id = %s AND role = 'admin'", (society_id,))
         return cur.fetchall()

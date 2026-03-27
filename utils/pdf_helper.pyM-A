@@ -1,0 +1,27 @@
+from io import BytesIO
+from flask import render_template
+
+# Safe import (won’t crash if not installed)
+try:
+    from xhtml2pdf import pisa
+except ImportError:
+    pisa = None
+
+
+def generate_pdf_blob(template_path, data):
+    """Generates a PDF and returns it as a bytes object."""
+
+    # If xhtml2pdf is not available
+    if pisa is None:
+        print("PDF feature disabled: xhtml2pdf not installed")
+        return None
+
+    html = render_template(template_path, **data)
+    result = BytesIO()
+
+    pisa_status = pisa.CreatePDF(html, dest=result)
+
+    if pisa_status.err:
+        return None
+
+    return result.getvalue()

@@ -1,99 +1,18 @@
-# import os
-# import psycopg2
-# from psycopg2.extras import RealDictCursor
-# from urllib.parse import urlparse
-
-
-
-
-
-
-# def get_db_connection():
-#     """
-#     Returns a PostgreSQL connection that provides
-#     dictionary-style rows (RealDictCursor)
-#     """
-#     return psycopg2.connect(
-#         host=os.getenv("DB_HOST", "localhost"),
-#         port=int(os.getenv("DB_PORT", 5432)),
-#         dbname=os.getenv("DB_NAME", "sms_db"),
-#         user=os.getenv("DB_USER", "postgres"),
-#         password=os.getenv("DB_PASSWORD", "Umar123"),
-#         cursor_factory=RealDictCursor
-#     )
-
-# import os
-# import psycopg2
-# from psycopg2.extras import RealDictCursor
-
-# def get_db_connection():
-#     # 1. Get the URL from Render Environment
-#     db_url = os.getenv("DATABASE_URL")
-
-#     try:
-#         if db_url:
-#             # Fix for Render's 'postgres://' vs 'postgresql://' requirement
-#             if db_url.startswith("postgres://"):
-#                 db_url = db_url.replace("postgres://", "postgresql://", 1)
-            
-#             # CRITICAL: Added cursor_factory=RealDictCursor here
-#             return psycopg2.connect(db_url, cursor_factory=RealDictCursor)
-        
-#         else:
-#             # 2. Local fallback
-#             return psycopg2.connect(
-#                 host=os.getenv("DB_HOST", "localhost"),
-#                 port=int(os.getenv("DB_PORT", 5432)),
-#                 dbname=os.getenv("DB_NAME", "sms_db"),
-#                 user=os.getenv("DB_USER", "postgres"),
-#                 password=os.getenv("DB_PASSWORD", "Umar123"),
-#                 cursor_factory=RealDictCursor
-#             )
-#     except Exception as e:
-#         print(f"DATABASE CONNECTION ERROR: {e}")
-#         raise e
-
-
-
-
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import pymysql
+import pymysql.cursors
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def get_db_connection():
-    """
-    Returns a PostgreSQL connection.
-    Works in both:
-    - Render (uses DATABASE_URL)
-    - Local (uses .env or fallback values)
-    """
-
-    db_url = os.getenv("DATABASE_URL")
-
-    try:
-        # =========================
-        # RENDER / PRODUCTION DB
-        # =========================
-        if db_url:
-            # Render sometimes provides postgres:// instead of postgresql://
-            if db_url.startswith("postgres://"):
-                db_url = db_url.replace("postgres://", "postgresql://", 1)
-
-            return psycopg2.connect(db_url, cursor_factory=RealDictCursor)
-
-        # =========================
-        # LOCAL DB FALLBACK
-        # =========================
-        return psycopg2.connect(
-            host=os.getenv("DB_HOST", "localhost"),
-            port=int(os.getenv("DB_PORT", 5432)),
-            dbname=os.getenv("DB_NAME", "society_db"),
-            user=os.getenv("DB_USER", "postgres"),
-            password=os.getenv("DB_PASSWORD", "1234"),
-            cursor_factory=RealDictCursor
-        )
-
-    except Exception as e:
-        print("❌ DATABASE CONNECTION ERROR:", e)
-        raise
+    conn = pymysql.connect(
+        host=os.getenv("DB_HOST", "127.0.0.1"),
+        port=int(os.getenv("DB_PORT", 3307)),
+        database=os.getenv("DB_NAME", "smsdb"),
+        user=os.getenv("DB_USER", "root"),
+        password=os.getenv("DB_PASSWORD", ""),
+        cursorclass=pymysql.cursors.DictCursor,
+        charset="utf8mb4"
+    )
+    return conn

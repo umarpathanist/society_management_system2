@@ -117,4 +117,4 @@ app = create_app()
 
 if __name__ == "__main__":
     # use_reloader=False is mandatory when using APScheduler
-    app.run(debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=8001, debug=True, use_reloader=False)

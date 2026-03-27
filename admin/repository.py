@@ -1,13 +1,11 @@
-
 from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
 
 class AdminRepository:
+
     @staticmethod
     def get_all_admins():
-        """Fetches all society admins for the Super Admin list."""
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT u.id, u.full_name, u.email, u.society_id, s.name as society_name
@@ -23,9 +21,8 @@ class AdminRepository:
 
     @staticmethod
     def get_by_id(admin_id):
-        """Fetches a single admin's details."""
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT u.id, u.full_name, u.email, u.society_id, s.name as society_name
@@ -40,20 +37,18 @@ class AdminRepository:
 
     @staticmethod
     def create_admin(data):
-        """Saves a new admin. Uses type-safe ID extraction."""
         conn = get_db_connection()
-        cur = conn.cursor() 
+        cur = conn.cursor()
         try:
+            # ✅ FIXED: Removed RETURNING id, using lastrowid
             cur.execute("""
                 INSERT INTO users (full_name, email, password_hash, role, society_id)
-                VALUES (%s, %s, %s, 'admin', %s) RETURNING id
+                VALUES (%s, %s, %s, 'admin', %s)
             """, (data['full_name'], data['email'], data['password_hash'], data.get('society_id')))
-            res = cur.fetchone()
-            if res:
-                new_id = res['id'] if isinstance(res, dict) else res[0]
-                conn.commit()
-                return new_id
-            return None
+            
+            new_id = cur.lastrowid  # ✅ MySQL way
+            conn.commit()
+            return new_id
         except Exception as e:
             conn.rollback()
             raise e
@@ -61,12 +56,8 @@ class AdminRepository:
             cur.close()
             conn.close()
 
-    # ======================================================
-    # FIXED: ADDED MISSING update_admin METHOD
-    # ======================================================
     @staticmethod
     def update_admin(admin_id, data):
-        """Updates the admin's name and email in the database."""
         conn = get_db_connection()
         cur = conn.cursor()
         try:
@@ -89,7 +80,10 @@ class AdminRepository:
         conn = get_db_connection()
         cur = conn.cursor()
         try:
-            cur.execute("UPDATE users SET society_id = %s WHERE id = %s AND role = 'admin'", (society_id, admin_id))
+            cur.execute(
+                "UPDATE users SET society_id = %s WHERE id = %s AND role = 'admin'",
+                (society_id, admin_id)
+            )
             conn.commit()
             return True
         finally:
@@ -109,12 +103,16 @@ class AdminRepository:
 
     @staticmethod
     def get_admin_by_society(society_id):
-        """Helper to check if a society already has an admin."""
-        if not society_id: return None
+        if not society_id:
+            return None
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT full_name FROM users WHERE society_id = %s AND role = 'admin'", (society_id,))
-        res = cur.fetchone()
-        cur.close()
-        conn.close()
-        return res
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                "SELECT full_name FROM users WHERE society_id = %s AND role = 'admin'",
+                (society_id,)
+            )
+            return cur.fetchone()
+        finally:
+            cur.close()
+            conn.close()

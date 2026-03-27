@@ -35,50 +35,6 @@ def list_expenses():
 # ======================================================
 # 2. ADD EXPENSE (Matches url_for('expenses.add_expense'))
 # ======================================================
-# @expenses_bp.route("/add", methods=["GET", "POST"])
-# @login_required
-# @role_required("super_admin", "admin", "treasurer")
-# def add_expense():
-#     user = session.get("user")
-#     role = user.get("role").lower()
-
-#     if request.method == "POST":
-#         # Determine society ID
-#         if role == "super_admin":
-#             target_society_id = request.form.get("society_id")
-#         else:
-#             target_society_id = session.get("society_id")
-
-#         if not target_society_id:
-#             flash("Society association missing.", "danger")
-#             return redirect(url_for("expenses.add_expense"))
-
-#         try:
-#             ExpenseRepository.add({
-#                 "society_id": target_society_id,
-#                 "category": request.form.get("category"),
-#                 "amount": request.form.get("amount"),
-#                 "expense_date": request.form.get("expense_date") or date.today(),
-#                 "description": request.form.get("description")
-#             })
-#             flash("Expense recorded successfully! ✅", "success")
-#             return redirect(url_for("expenses.list_expenses"))
-#         except Exception as e:
-#             flash(f"Error: {str(e)}", "danger")
-
-#     # Only Super Admin needs the society list for the dropdown
-#     societies = SocietyRepository.get_all() if role == "super_admin" else []
-    
-#     return render_template("expenses/add.html", 
-#                            societies=societies, 
-#                            role=role)
-
-
-
-
-
-# expenses/routes.py
-
 @expenses_bp.route("/add", methods=["GET", "POST"])
 @login_required
 @role_required("super_admin", "admin", "treasurer")
@@ -87,15 +43,19 @@ def add_expense():
     role = user.get("role").lower()
 
     if request.method == "POST":
-        # Get ID from the hidden form field
-        society_id = request.form.get("society_id")
+        # ✅ FIXED: Get society_id from form, fallback to session
+        society_id = request.form.get("society_id") or session.get("society_id")
+
+        if not society_id:
+            flash("Society association missing.", "danger")
+            return redirect(url_for("expenses.add_expense"))
 
         try:
             ExpenseRepository.add({
-                "society_id": society_id,
+                "society_id": int(society_id),  # ✅ Convert to int
                 "category": request.form.get("category"),
                 "amount": request.form.get("amount"),
-                "expense_date": request.form.get("expense_date"),
+                "expense_date": request.form.get("expense_date") or str(date.today()),
                 "description": request.form.get("description")
             })
             flash("Expense recorded successfully! ✅", "success")
@@ -103,15 +63,13 @@ def add_expense():
         except Exception as e:
             flash(f"Error: {str(e)}", "danger")
 
-    # GET Logic: Get the ID from the URL parameter (passed from list page)
-    # If not in URL, check if the user is a local Admin/Treasurer
+    # GET: Get society_id from URL or session
     target_soc_id = request.args.get("society_id") or session.get("society_id")
-    
-    # Fetch society name for the header label
+
     soc_data = SocietyRepository.get_by_id(target_soc_id) if target_soc_id else None
     society_name = soc_data['name'] if soc_data else "Unknown Society"
 
-    return render_template("expenses/add.html", 
-                           target_soc_id=target_soc_id, 
+    return render_template("expenses/add.html",
+                           target_soc_id=target_soc_id,
                            society_name=society_name,
                            role=role)

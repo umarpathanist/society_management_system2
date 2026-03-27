@@ -3,7 +3,6 @@
 
 {% block content %}
 <style>
-    /* 1. Header & Layout */
     .ledger-header {
         display: flex;
         justify-content: space-between;
@@ -34,7 +33,6 @@
         flex-wrap: wrap;
     }
 
-    /* 2. Grid Styling */
     .ledger-labels {
         display: grid;
         grid-template-columns: 140px 2fr 2.5fr 150px;
@@ -65,8 +63,17 @@
         box-shadow: 0 10px 25px rgba(79, 70, 229, 0.08);
     }
 
-    /* 3. Column Content Styling */
-    .col-date { font-size: 14px; color: #94a3b8; font-weight: 600; }
+    .col-date {
+        font-size: 13px;
+        color: #94a3b8;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    .col-date .time {
+        font-size: 11px;
+        color: #cbd5e1;
+        font-weight: 500;
+    }
 
     .col-category { display: flex; flex-direction: column; gap: 4px; }
     .cat-name { font-weight: 700; color: #1e293b; font-size: 15px; }
@@ -82,17 +89,27 @@
         text-transform: uppercase;
     }
 
-    .col-desc { font-size: 13px; color: #64748b; padding-right: 20px; line-height: 1.5; font-weight: 500; }
-    .col-amount { text-align: right; font-size: 20px; font-weight: 800; color: #10b981; }
+    .col-desc {
+        font-size: 13px;
+        color: #64748b;
+        padding-right: 20px;
+        line-height: 1.5;
+        font-weight: 500;
+    }
 
-    /* 4. Buttons */
+    .col-amount-desktop {
+        text-align: right;
+        font-size: 20px;
+        font-weight: 800;
+        color: #10b981;
+    }
+
     .btn-action { background: #4e46e5; color: white; padding: 12px 25px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2); transition: all 0.2s; border: none; cursor: pointer; white-space: nowrap; }
     .btn-action:hover { background: #4338ca; transform: translateY(-2px); }
     .btn-action.disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; box-shadow: none; pointer-events: none; }
     .btn-back { background: #f1f5f9; color: #64748b; padding: 12px 20px; border-radius: 14px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.2s; white-space: nowrap; }
     .btn-back:hover { background: #e2e8f0; color: #1e293b; }
 
-    /* Mobile field label */
     .mobile-label {
         display: none;
         font-size: 10px;
@@ -103,20 +120,8 @@
         margin-bottom: 3px;
     }
 
-    /* Mobile-only top row — hidden on desktop */
-    .card-top-row-mobile {
-        display: none;
-    }
+    .card-top-row-mobile { display: none; }
 
-    /* Desktop-only amount — visible on desktop */
-    .col-amount-desktop {
-        text-align: right;
-        font-size: 20px;
-        font-weight: 800;
-        color: #10b981;
-    }
-
-    /* ── Tablet (≤ 900px): tighten grid ── */
     @media (max-width: 900px) {
         .ledger-labels,
         .transaction-card {
@@ -128,7 +133,6 @@
         .col-amount-desktop { font-size: 17px; }
     }
 
-    /* ── Mobile (≤ 640px): stack as card ── */
     @media (max-width: 640px) {
         .ledger-labels { display: none; }
 
@@ -137,23 +141,20 @@
             flex-direction: column;
             align-items: stretch;
             gap: 10px;
-            padding: 18px 18px;
+            padding: 18px;
             border-radius: 16px;
         }
 
         .transaction-card:hover { transform: none; }
 
-        /* Show mobile top row */
         .card-top-row-mobile {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        /* Hide desktop date and desktop amount columns */
         .col-date { display: none; }
         .col-amount-desktop { display: none; }
-
         .col-desc { padding-right: 0; }
         .mobile-label { display: block; }
     }
@@ -169,7 +170,7 @@
             <span style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Building Context:</span>
             <select onchange="window.location.href='?society_id=' + this.value"
                     style="border: none; outline: none; font-weight: 700; color: #4e46e5; background: transparent; cursor: pointer; font-size: 14px;">
-                <option value="">-- All Societies --</option>
+                <option value="">-- Select Societies --</option>
                 {% for s in societies %}
                     <option value="{{ s.id }}" {% if s.id|string == selected_soc|string %}selected{% endif %}>{{ s.name }}</option>
                 {% endfor %}
@@ -191,7 +192,7 @@
     </div>
 </div>
 
-<!-- COLUMN LABELS (desktop/tablet) -->
+<!-- COLUMN LABELS -->
 <div class="ledger-labels">
     <div>Transaction Date</div>
     <div>Category & Period</div>
@@ -205,16 +206,40 @@
         {% for r in records %}
         <div class="transaction-card">
 
-            <!-- Mobile top row: date + amount (only visible on mobile) -->
+            <!-- Mobile top row -->
             <div class="card-top-row-mobile">
-                <span class="col-date" style="display:block;">{{ r.tr_date }}</span>
-                <span class="col-amount">+ ₹{{ "{:,.2f}".format(r.amount) }}</span>
+                <div class="col-date" style="display:block;">
+                    {% if r.tr_date %}
+                        {% if r.tr_date is string %}
+                            {{ r.tr_date[:10] }}
+                        {% else %}
+                            {{ r.tr_date.strftime('%d %b %Y') }}
+                            <div class="time">{{ r.tr_date.strftime('%I:%M %p') }}</div>
+                        {% endif %}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+                <span style="font-size:18px; font-weight:800; color:#10b981;">
+                    + ₹{{ "{:,.2f}".format(r.amount) }}
+                </span>
             </div>
 
-            <!-- 1. DATE (desktop/tablet only) -->
-            <div class="col-date">{{ r.tr_date }}</div>
+            <!-- 1. DATE (desktop/tablet) -->
+            <div class="col-date">
+                {% if r.tr_date %}
+                    {% if r.tr_date is string %}
+                        {{ r.tr_date[:10] }}
+                    {% else %}
+                        {{ r.tr_date.strftime('%d %b %Y') }}
+                        <div class="time">{{ r.tr_date.strftime('%I:%M %p') }}</div>
+                    {% endif %}
+                {% else %}
+                    N/A
+                {% endif %}
+            </div>
 
-            <!-- 2. CATEGORY & CYCLE -->
+            <!-- 2. CATEGORY & PERIOD -->
             <div class="col-category">
                 <span class="mobile-label">Category & Period</span>
                 <span class="cat-name">{{ r.category }}</span>
@@ -229,7 +254,7 @@
                 {{ r.description }}
             </div>
 
-            <!-- 4. AMOUNT (desktop/tablet only) -->
+            <!-- 4. AMOUNT (desktop/tablet) -->
             <div class="col-amount-desktop">+ ₹{{ "{:,.2f}".format(r.amount) }}</div>
 
         </div>
@@ -238,7 +263,9 @@
         <div style="background: white; border-radius: 24px; padding: 80px 20px; text-align: center; border: 2px dashed #e2e8f0; margin-top: 20px;">
             <span style="font-size: 40px; display: block; margin-bottom: 20px;">📋</span>
             <h3 style="color: #64748b; margin-top: 0;">No Records Available</h3>
-            <p style="color: #94a3b8; max-width: 400px; margin: 0 auto;">Select a society from the dropdown or record a manual transaction to populate the ledger.</p>
+            <p style="color: #94a3b8; max-width: 400px; margin: 0 auto;">
+                Select a society from the dropdown or record a manual transaction to populate the ledger.
+            </p>
         </div>
     {% endif %}
 </div>

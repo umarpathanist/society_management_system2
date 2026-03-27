@@ -1,67 +1,14 @@
-
 from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
 from blocks.repository import BlockRepository
 from flats.repository import FlatRepository
 
 class SocietyRepository:
 
-    # @staticmethod
-    # def get_all():
-    #     """Fetches all societies for the Super Admin view."""
-    #     conn = get_db_connection()
-    #     cur = conn.cursor(cursor_factory=RealDictCursor)
-    #     try:
-    #         cur.execute("""
-    #             SELECT 
-    #                 s.id, s.name, s.address,
-    #                 (SELECT COUNT(*) FROM blocks b WHERE b.society_id = s.id) as blocks,
-    #                 (SELECT COUNT(*) FROM flats f JOIN blocks b ON f.block_id = b.id WHERE b.society_id = s.id) as flats,
-    #                 (SELECT full_name FROM users WHERE society_id = s.id AND role = 'treasurer' LIMIT 1) as treasurer_name
-    #             FROM societies s ORDER BY s.id DESC
-    #         """)
-    #         return cur.fetchall()
-    #     finally:
-    #         cur.close()
-    #         conn.close()
-
-    # @staticmethod
-    # def get_by_admin(society_id):
-    #     """
-    #     FIXES: AttributeError: no attribute 'get_by_admin'
-    #     Fetches the specific society assigned to an Admin.
-    #     """
-    #     conn = get_db_connection()
-    #     cur = conn.cursor(cursor_factory=RealDictCursor)
-    #     try:
-    #         cur.execute("""
-    #             SELECT 
-    #                 s.id, s.name, s.address,
-    #                 (SELECT COUNT(*) FROM blocks b WHERE b.society_id = s.id) as blocks,
-    #                 (SELECT COUNT(*) FROM flats f JOIN blocks b ON f.block_id = b.id WHERE b.society_id = s.id) as flats,
-    #                 (SELECT full_name FROM users WHERE society_id = s.id AND role = 'treasurer' LIMIT 1) as treasurer_name
-    #             FROM societies s 
-    #             WHERE s.id = %s
-    #         """, (society_id,))
-    #         # Return as a list so the HTML loop works
-    #         return cur.fetchall()
-    #     finally:
-    #         cur.close()
-    #         conn.close()
-
-    from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
-
-class SocietyRepository:
-
-    # ======================================================
-    # 1. GET ALL SOCIETIES (Sorted Alphabetically)
-    # ======================================================
     @staticmethod
     def get_all():
         """Fetches all societies sorted by Name (A-Z)."""
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT 
@@ -70,21 +17,18 @@ class SocietyRepository:
                     (SELECT COUNT(*) FROM flats f JOIN blocks b ON f.block_id = b.id WHERE b.society_id = s.id) as flats,
                     (SELECT full_name FROM users WHERE society_id = s.id AND role = 'treasurer' LIMIT 1) as treasurer_name
                 FROM societies s 
-                ORDER BY s.name ASC  -- Changed from s.id DESC
+                ORDER BY s.name ASC
             """)
             return cur.fetchall()
         finally:
             cur.close()
             conn.close()
 
-    # ======================================================
-    # 2. GET BY ADMIN (Sorted Alphabetically)
-    # ======================================================
     @staticmethod
     def get_by_admin(society_id):
-        """Fetches society for Admin view, sorted by Name."""
+        """Fetches society for Admin view."""
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT 
@@ -94,28 +38,26 @@ class SocietyRepository:
                     (SELECT full_name FROM users WHERE society_id = s.id AND role = 'treasurer' LIMIT 1) as treasurer_name
                 FROM societies s 
                 WHERE s.id = %s
-                ORDER BY s.name ASC -- Ensure alphabetical order
+                ORDER BY s.name ASC
             """, (society_id,))
             return cur.fetchall()
         finally:
             cur.close()
             conn.close()
 
-    # ... rest of your repository methods (create, update, delete, get_by_id) ...
-
     @staticmethod
     def create(data):
         """Creates society and auto-generates blocks and flats."""
         conn = get_db_connection()
-        cur = conn.cursor() 
+        cur = conn.cursor()
         try:
+            # ✅ FIXED: Removed RETURNING id, using lastrowid instead
             cur.execute("""
                 INSERT INTO societies (name, address, total_blocks, floors_per_block, flats_per_floor)
-                VALUES (%s, %s, %s, %s, %s) RETURNING id
+                VALUES (%s, %s, %s, %s, %s)
             """, (data['name'], data['address'], data['total_blocks'], data['floors_per_block'], data['flats_per_floor']))
             
-            res = cur.fetchone()
-            society_id = res['id'] if isinstance(res, dict) else res[0]
+            society_id = cur.lastrowid  # ✅ MySQL way to get inserted ID
             conn.commit()
 
             # Infrastructure loop
@@ -124,7 +66,7 @@ class SocietyRepository:
             fl_pf = int(data['flats_per_floor'])
 
             for i in range(1, b_qty + 1):
-                label = chr(64 + i) 
+                label = chr(64 + i)
                 block_id = BlockRepository.create(society_id, f"Block {label}", f_qty)
                 
                 new_flats = []
@@ -144,14 +86,14 @@ class SocietyRepository:
             raise e
         finally:
             cur.close()
-            conn.close()
-
+            conn.close()        
+        
     @staticmethod
     def update(society_id, data):
-        """Updates basic info and generates flats if society is empty."""
         conn = get_db_connection()
         cur = conn.cursor()
         try:
+            # Update society info
             cur.execute("""
                 UPDATE societies 
                 SET name=%s, address=%s, total_blocks=%s, floors_per_block=%s, flats_per_floor=%s
@@ -159,21 +101,41 @@ class SocietyRepository:
             """, (data['name'], data['address'], data['total_blocks'], 
                   data['floors_per_block'], data['flats_per_floor'], society_id))
 
-            cur.execute("SELECT COUNT(*) FROM blocks WHERE society_id = %s", (society_id,))
-            count_res = cur.fetchone()
-            existing_blocks = count_res['count'] if isinstance(count_res, dict) else count_res[0]
+            # ✅ Update blocks floors
+            cur.execute("""
+                UPDATE blocks SET floors=%s WHERE society_id=%s
+            """, (data['floors_per_block'], society_id))
 
-            if existing_blocks == 0:
-                # Same logic as create
-                b_qty, f_qty, fl_pf = int(data['total_blocks']), int(data['floors_per_block']), int(data['flats_per_floor'])
-                for i in range(1, b_qty + 1):
-                    lbl = chr(64 + i)
-                    bid = BlockRepository.create(society_id, f"Block {lbl}", f_qty)
-                    flts = []
-                    for f in range(1, f_qty + 1):
-                        for j in range(1, fl_pf + 1):
-                            flts.append({"block_id": bid, "flat_number": f"{lbl}-{f}{j:02d}", "floor_number": f})
-                    FlatRepository.create_multiple(flts)
+            conn.commit()
+
+            # ✅ Now regenerate missing flats for each block
+            f_qty = int(data['floors_per_block'])
+            fl_pf = int(data['flats_per_floor'])
+
+            cur2 = conn.cursor()
+            cur2.execute("SELECT id, name FROM blocks WHERE society_id=%s", (society_id,))
+            blocks = cur2.fetchall()
+
+            for block in blocks:
+                block_id = block['id']
+                block_label = block['name'].replace("Block ", "")
+
+                for floor in range(1, f_qty + 1):
+                    for j in range(1, fl_pf + 1):
+                        flat_number = f"{block_label}-{floor}{j:02d}"
+
+                        # Only insert if flat doesn't exist already
+                        cur2.execute("""
+                            SELECT id FROM flats 
+                            WHERE block_id=%s AND flat_number=%s
+                        """, (block_id, flat_number))
+
+                        exists = cur2.fetchone()
+                        if not exists:
+                            cur2.execute("""
+                                INSERT INTO flats (block_id, flat_number, floor_number)
+                                VALUES (%s, %s, %s)
+                            """, (block_id, flat_number, floor))
 
             conn.commit()
             return True
@@ -183,11 +145,11 @@ class SocietyRepository:
         finally:
             cur.close()
             conn.close()
-
+        
     @staticmethod
     def get_by_id(id):
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("SELECT * FROM societies WHERE id = %s", (id,))
             return cur.fetchone()

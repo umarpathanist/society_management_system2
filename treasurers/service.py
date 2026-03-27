@@ -1,7 +1,7 @@
 # # from werkzeug.security import generate_password_hash
 # # from treasurers.repository import TreasurerRepository
 # # from database.connection import get_db_connection
-# # from psycopg2.extras import RealDictCursor
+# # 
 # # from utils.mail import send_login_details # Using the helper we created
 
 # # class TreasurerService:
@@ -53,7 +53,7 @@
 # #             return None
 
 # #         conn = get_db_connection()
-# #         cur = conn.cursor(cursor_factory=RealDictCursor)
+# #         cur = conn.cursor()
         
 # #         try:
 # #             # 1. Total Paid Maintenance Income
@@ -96,7 +96,7 @@
 # #             conn.close()
 
 # from database.connection import get_db_connection
-# from psycopg2.extras import RealDictCursor
+# 
 # from treasurers.repository import TreasurerRepository
 # from werkzeug.security import generate_password_hash
 # from utils.mail import send_login_details
@@ -126,7 +126,7 @@
 #     def get_finance_stats(society_id):
 #         if not society_id: return None
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             # Paid Maintenance
 #             cur.execute("""
@@ -165,7 +165,7 @@
 #     def get_global_stats():
 #         """Calculates system-wide financial totals for Super Admin."""
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM maintenance WHERE status = 'paid'")
 #             maint = cur.fetchone()['total']
@@ -196,7 +196,7 @@
 #     @staticmethod
 #     def get_super_admin_stats():
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("SELECT COUNT(*) as count FROM societies")
 #             soc = cur.fetchone()['count']
@@ -240,7 +240,7 @@
 from werkzeug.security import generate_password_hash
 from treasurers.repository import TreasurerRepository
 from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
+
 from utils.mail import send_login_details
 
 class TreasurerService:
@@ -288,7 +288,7 @@ class TreasurerService:
     def get_finance_stats(society_id):
         if not society_id: return None
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT COALESCE(SUM(m.amount), 0) as total FROM maintenance m
@@ -316,7 +316,7 @@ class TreasurerService:
     @staticmethod
     def get_global_stats():
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM maintenance WHERE status = 'paid'")
             maint = cur.fetchone()['total']
@@ -330,7 +330,7 @@ class TreasurerService:
 
     @staticmethod
     def get_super_admin_stats():
-        conn = get_db_connection(); cur = conn.cursor(cursor_factory=RealDictCursor)
+        conn = get_db_connection(); cur = conn.cursor()
         try:
             cur.execute("SELECT COUNT(*) as count FROM societies"); soc = cur.fetchone()['count']
             cur.execute("SELECT COUNT(*) as count FROM users WHERE role = 'admin'"); adm = cur.fetchone()['count']

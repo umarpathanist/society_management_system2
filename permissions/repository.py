@@ -1,5 +1,5 @@
 from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
+
 
 
 class PermissionRepository:
@@ -7,7 +7,7 @@ class PermissionRepository:
     @staticmethod
     def user_has_permission(user_id, permission_code):
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
 
         cur.execute("""
             SELECT 1

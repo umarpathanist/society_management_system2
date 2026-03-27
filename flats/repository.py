@@ -1,12 +1,12 @@
 # from database.connection import get_db_connection
-# from psycopg2.extras import RealDictCursor
+# 
 
 # class FlatRepository:
 
 #     @staticmethod
 #     def get_by_block(block_id):
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         cur.execute("""
 #             SELECT f.id, f.flat_number, f.floor_number, f.is_occupied, f.owner_id, f.tenant_id
 #             FROM flats f
@@ -33,7 +33,7 @@
 #     @staticmethod
 #     def get_by_id(flat_id):
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         cur.execute("""
 #             SELECT f.*, b.society_id
 #             FROM flats f
@@ -124,7 +124,7 @@
 #     @staticmethod
 #     def get_by_block(block_id):
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 
 #         cur.execute("""
 #             SELECT 
@@ -173,7 +173,7 @@
 #         Required for bulk maintenance generation.
 #         """
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("""
 #                 SELECT f.id 
@@ -197,8 +197,8 @@
 #     #     for the dynamic dropdown to work.
 #     #     """
 #     #     conn = get_db_connection()
-#     #     from psycopg2.extras import RealDictCursor
-#     #     cur = conn.cursor(cursor_factory=RealDictCursor)
+#     #     
+#     #     cur = conn.cursor()
 #     #     try:
 #     #         cur.execute("""
 #     #             SELECT f.id, f.flat_number, f.block_id 
@@ -219,7 +219,7 @@
 #     # def get_by_block(block_id):
 #     #     """Fetches all flats for a specific block with owner/tenant details."""
 #     #     conn = get_db_connection()
-#     #     cur = conn.cursor(cursor_factory=RealDictCursor)
+#     #     cur = conn.cursor()
 #     #     try:
 #     #         # We use LEFT JOIN so flats appear even if they are VACANT
 #     #         cur.execute("""
@@ -239,7 +239,7 @@
 #     #         conn.close()
 
 # from database.connection import get_db_connection
-# from psycopg2.extras import RealDictCursor
+# 
 
 # class FlatRepository:
 
@@ -250,7 +250,7 @@
 #         This ensures A-101 comes before A-1201.
 #         """
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("""
 #                 SELECT f.id, f.flat_number, f.block_id, f.floor_number 
@@ -275,7 +275,7 @@
 #         sorted in architectural order (Floor 1 to Floor 12).
 #         """
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("""
 #                 SELECT 
@@ -324,7 +324,7 @@
 #         Fetches only the IDs of flats that are currently occupied in a society.
 #         """
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("""
 #                 SELECT f.id 
@@ -350,7 +350,7 @@
 #         3. Have at least one record in the maintenance table
 #         """
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("""
 #                 SELECT DISTINCT f.id, f.flat_number 
@@ -368,7 +368,7 @@
 
 
 # from database.connection import get_db_connection
-# from psycopg2.extras import RealDictCursor
+# 
 
 # class FlatRepository:
 
@@ -379,7 +379,7 @@
 #     def get_by_id(flat_id):
 #         """Fetches a single flat record with society context."""
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("""
 #                 SELECT f.*, b.society_id
@@ -399,7 +399,7 @@
 #     def get_by_block(block_id):
 #         """Fetches flats for a block in floor-wise order (1, 2, 3...)."""
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("""
 #                 SELECT f.*, uo.full_name as owner_name, ut.full_name as tenant_name
@@ -418,7 +418,7 @@
 #     def get_occupied_by_society(society_id):
 #         """Used for automated billing."""
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("""
 #                 SELECT f.id FROM flats f
@@ -434,7 +434,7 @@
 #     def get_occupied_with_maintenance(block_id):
 #         """Used for manual payment dropdown."""
 #         conn = get_db_connection()
-#         cur = conn.cursor(cursor_factory=RealDictCursor)
+#         cur = conn.cursor()
 #         try:
 #             cur.execute("""
 #                 SELECT DISTINCT f.id, f.flat_number 
@@ -495,7 +495,7 @@
 
 
 from database.connection import get_db_connection
-from psycopg2.extras import RealDictCursor
+
 
 class FlatRepository:
 
@@ -509,8 +509,8 @@ class FlatRepository:
         Uses LEFT JOIN so that Vacant flats stay in the list.
         """
         conn = get_db_connection()
-        from psycopg2.extras import RealDictCursor
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT 
@@ -539,7 +539,7 @@ class FlatRepository:
         Required for generating bulk maintenance bills.
         """
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT f.* 
@@ -557,7 +557,7 @@ class FlatRepository:
     def get_by_block(block_id):
         """Fetches flats for a block in floor-wise order (1, 2, 3...)."""
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT f.*, uo.full_name as owner_name, ut.full_name as tenant_name
@@ -581,8 +581,8 @@ class FlatRepository:
         Prevents billing vacant units.
         """
         conn = get_db_connection()
-        from psycopg2.extras import RealDictCursor
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur = conn.cursor()
         try:
             cur.execute("""
                 SELECT f.id 
@@ -652,7 +652,7 @@ class FlatRepository:
     def get_by_id(flat_id):
         """Fetches a single flat record with block and society context."""
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)  # ✅ RealDictCursor
+        cur = conn.cursor()  # ✅ RealDictCursor
         try:
             cur.execute("""
                 SELECT f.*, b.society_id
